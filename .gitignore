@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+my-venv/
+
+# IDE
+.idea/
+.vscode/
+.roo/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+.logs/
+
+# Temporary files
+*.bak
+*.tmp
+tmp/
+
+# TortoiseGit
+tortoisegit.data
+tortoisegit.index
+tgitchangelist
+
+# Eclipse specific
+.eclipse-data/
+eclipse-workspace/
+
+# Configuration with secrets
+config.json
+.env
+*.secret
+bearer_token.txt
+
+# User-specific config (keep template only)
+!config.example.json
+.config/
+/.agents
+/.claude
+/.codex
+/AGENTS.md
+/docs/ANALYSIS.md
+/docs/ECLIPSECTL_MCP_TOOLS.md
