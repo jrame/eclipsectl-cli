@@ -39,6 +39,7 @@ async def test_create_java_launch_configuration_maps_all_arguments(client):
         environment_variables={"API_URL": "http://localhost"},
         append_system_environment=False,
         name_conflict="generate",
+        launch_type="junit5",
     )
 
     client._call_mcp_tool.assert_awaited_once_with(
@@ -53,8 +54,32 @@ async def test_create_java_launch_configuration_maps_all_arguments(client):
             "environmentVariables": {"API_URL": "http://localhost"},
             "appendSystemEnvironment": False,
             "nameConflict": "generate",
+            "type": "junit5",
         },
     )
+
+
+@pytest.mark.asyncio
+async def test_create_java_launch_configuration_omits_type_by_default(client):
+    await client.create_java_launch_configuration("com.example.Main")
+
+    client._call_mcp_tool.assert_awaited_once_with(
+        "createJavaLaunchConfiguration",
+        {
+            "mainClass": "com.example.Main",
+            "appendSystemEnvironment": True,
+            "nameConflict": "error",
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_java_launch_configuration_rejects_invalid_type(client):
+    with pytest.raises(ValueError, match="launch_type"):
+        await client.create_java_launch_configuration(
+            "com.example.Main", launch_type="junit3"
+        )
+    client._call_mcp_tool.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -113,6 +138,9 @@ def test_wrapper_mcp_exposes_launch_configuration_schemas():
     create_schema = tools["eclipse_create_java_launch_configuration"]["inputSchema"]
     assert create_schema["required"] == ["mainClass"]
     assert create_schema["properties"]["nameConflict"]["enum"] == ["error", "generate"]
+    assert create_schema["properties"]["type"]["enum"] == [
+        "java", "junit4", "junit5", "testng", "auto"
+    ]
 
     get_schema = tools["eclipse_get_launch_configuration"]["inputSchema"]
     assert get_schema["properties"]["includeEnvironmentValues"]["default"] is False
@@ -142,3 +170,19 @@ async def test_daemon_routes_launch_environment_with_tri_state_inheritance():
         "Main dev", {"PROFILE": "dev"}, ["OLD_PROFILE"], "merge", None
     )
 
+
+@pytest.mark.asyncio
+async def test_daemon_routes_launch_configuration_type():
+    daemon = EclipseDaemon()
+    daemon.client = AsyncMock()
+    daemon.client.create_java_launch_configuration.return_value = "OK"
+
+    result = await daemon._execute_command("create_java_launch_configuration", {
+        "mainClass": "com.example.MainTest",
+        "type": "testng",
+    })
+
+    assert result == "OK"
+    daemon.client.create_java_launch_configuration.assert_awaited_once_with(
+        "com.example.MainTest", None, None, None, None, None, None, True, "error", "testng"
+    )

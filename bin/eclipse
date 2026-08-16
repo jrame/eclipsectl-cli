@@ -800,6 +800,12 @@ cmd_debug_config_create_java() {
                 args=$(jq -c --arg value "$2" '.configName=$value' <<< "$args")
                 shift 2
                 ;;
+            --type)
+                [ $# -lt 2 ] && die "--type requires java, junit4, junit5, testng, or auto"
+                case "$2" in java|junit4|junit5|testng|auto) ;; *) die "--type must be java, junit4, junit5, testng, or auto" ;; esac
+                args=$(jq -c --arg value "$2" '.type=$value' <<< "$args")
+                shift 2
+                ;;
             --project|-p)
                 [ $# -lt 2 ] && die "--project requires a value"
                 args=$(jq -c --arg value "$2" '.projectName=$value' <<< "$args")
@@ -1131,7 +1137,8 @@ DEBUG:
     debug breakpoint disable <file> <line>   Disable breakpoint
     debug run <configuration> [--wait/-w]     Run debug configuration
     debug configs                            List debug/run configurations
-    debug config create-java <main-class> [options]  Create a Java Application configuration
+    debug config create-java <class> [options]  Create a Java-based launch configuration
+      --type <java|junit4|junit5|testng|auto>  Select the configuration type
     debug config show <configuration> [--include-environment-values]  Show configuration details
     debug config update-environment <configuration> [options]  Update configuration environment
     debug threads                            List all threads

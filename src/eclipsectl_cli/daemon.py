@@ -445,6 +445,7 @@ class EclipseDaemon:
                 args.get("environmentVariables"),
                 args.get("appendSystemEnvironment", True),
                 args.get("nameConflict", "error"),
+                args.get("type"),
             )
         elif command == "get_launch_configuration":
             return await self.client.get_launch_configuration(

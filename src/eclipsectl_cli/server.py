@@ -310,6 +310,7 @@ class EclipseServer:
                 args.get("environmentVariables"),
                 args.get("appendSystemEnvironment", True),
                 args.get("nameConflict", "error"),
+                args.get("type"),
             )
         elif name == "eclipse_get_launch_configuration":
             return await self.eclipse_client.get_launch_configuration(

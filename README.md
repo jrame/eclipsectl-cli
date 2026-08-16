@@ -107,7 +107,7 @@ Create and inspect a Java launch configuration:
 
 ```bash
 eclipse debug config create-java com.example.Main \
-  --project example --env PROFILE=dev
+  --type java --project example --env PROFILE=dev
 eclipse debug config show Main
 eclipse debug run Main
 ```

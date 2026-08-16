@@ -316,6 +316,7 @@ eclipse debug configs
 
 # Créer une configuration Java Application
 eclipse debug config create-java com.example.Main \
+  --type java \
   --name "Main (dev)" \
   --project example \
   --program-arguments "--profile dev" \
@@ -594,7 +595,8 @@ eclipse debug breakpoint disable <file> <line>                    # Disable brea
 # Debug Session Control
 eclipse debug run <config> [--wait]              # Launch debug configuration
 eclipse debug configs                            # List run configurations (run/debug/coverage)
-eclipse debug config create-java <main-class> [options]  # Create a Java Application configuration
+eclipse debug config create-java <class> [options]       # Create a Java-based launch configuration
+  --type <java|junit4|junit5|testng|auto>        # Configuration type (server default when omitted)
   --name <name>                                  # Explicit configuration name
   --project <project>                            # Project (inferred when omitted)
   --program-arguments <args>                     # Program arguments

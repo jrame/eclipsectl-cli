@@ -1189,13 +1189,18 @@ TOOLS: List[Dict[str, Any]] = [
     },
     {
         "name": "eclipse_create_java_launch_configuration",
-        "description": "Create an Eclipse Java Application launch configuration.",
+        "description": "Create an Eclipse Java-based launch configuration.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "mainClass": {
                     "type": "string",
-                    "description": "Fully qualified main class name"
+                    "description": "Fully qualified main or test class name"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["java", "junit4", "junit5", "testng", "auto"],
+                    "description": "Launch configuration type (server default when omitted)"
                 },
                 "configName": {
                     "type": "string",

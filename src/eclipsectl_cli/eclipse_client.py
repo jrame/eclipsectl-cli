@@ -901,10 +901,17 @@ class EclipseClient:
         environment_variables: Optional[Dict[str, str]] = None,
         append_system_environment: bool = True,
         name_conflict: str = "error",
+        launch_type: Optional[str] = None,
     ) -> str:
-        """Create an Eclipse Java Application launch configuration."""
+        """Create an Eclipse Java-based launch configuration."""
         if name_conflict not in {"error", "generate"}:
             raise ValueError("name_conflict must be 'error' or 'generate'")
+        if launch_type is not None and launch_type not in {
+            "java", "junit4", "junit5", "testng", "auto"
+        }:
+            raise ValueError(
+                "launch_type must be 'java', 'junit4', 'junit5', 'testng', or 'auto'"
+            )
 
         args: Dict[str, Any] = {
             "mainClass": main_class,
@@ -921,6 +928,7 @@ class EclipseClient:
                 if working_directory is not None else None
             ),
             "environmentVariables": environment_variables,
+            "type": launch_type,
         }
         args.update({key: value for key, value in optional_args.items() if value is not None})
         return await self._call_mcp_tool("createJavaLaunchConfiguration", args)
