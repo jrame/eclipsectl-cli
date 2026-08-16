@@ -48,6 +48,26 @@ is_daemon_running() {
     [ -S "$SOCKET" ] && [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null
 }
 
+# Remove IPC files left behind by a daemon that is no longer running.
+# This must only be called after is_daemon_running has returned false.
+remove_stale_daemon_files() {
+    rm -f -- "$SOCKET" "$PID_FILE"
+}
+
+# The daemon writes its PID only after the Unix server is listening. Requiring
+# both files to belong to the process we just started prevents a stale socket
+# from being mistaken for a ready daemon.
+is_started_daemon_ready() {
+    local expected_pid="$1"
+    local recorded_pid
+
+    [ -S "$SOCKET" ] || return 1
+    [ -f "$PID_FILE" ] || return 1
+    recorded_pid=$(cat "$PID_FILE" 2>/dev/null) || return 1
+    [ "$recorded_pid" = "$expected_pid" ] || return 1
+    kill -0 "$expected_pid" 2>/dev/null
+}
+
 # Start daemon if not running
 ensure_daemon() {
     if ! is_daemon_running; then
@@ -75,18 +95,30 @@ ensure_daemon() {
             exit 1
         fi
 
+        # A daemon killed before its cleanup phase can leave these files
+        # behind. Remove them before launching so readiness checks cannot see
+        # state from the previous process.
+        remove_stale_daemon_files
+
         # Start daemon via Python (capture stderr for errors)
         local daemon_log="/tmp/eclipse_daemon_startup.log"
         python3 -m eclipsectl_cli.daemon >"$daemon_log" 2>&1 &
         local daemon_pid=$!
+        local daemon_ready=false
 
-        # Wait for socket (max 10s)
+        # Wait for the socket and PID file created by this exact process.
         for i in {1..50}; do
-            [ -S "$SOCKET" ] && break
+            if is_started_daemon_ready "$daemon_pid"; then
+                daemon_ready=true
+                break
+            fi
+
+            # Stop waiting as soon as the new daemon has exited.
+            kill -0 "$daemon_pid" 2>/dev/null || break
             sleep 0.2
         done
 
-        if [ -S "$SOCKET" ]; then
+        if [ "$daemon_ready" = true ]; then
             echo "✅ Daemon ready!" >&2
             rm -f "$daemon_log"
         else
@@ -1491,4 +1523,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
