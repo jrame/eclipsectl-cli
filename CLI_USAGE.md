@@ -4,11 +4,22 @@
 
 ## Installation
 
+Depuis le wheel publié dans une GitHub Release :
+
 ```bash
-pip install -e .
+pipx install ./eclipsectl_cli-0.1.0-py3-none-any.whl
 ```
 
-Cela installe la commande `eclipse` dans votre PATH.
+Cela installe dans un environnement isolé le paquet Python, ses dépendances et
+la commande Bash `eclipse` dans votre `PATH`.
+
+Pour le développement depuis les sources :
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+bash install.sh
+```
 
 ## Configuration
 

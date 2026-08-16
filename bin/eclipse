@@ -9,6 +9,21 @@ PID_FILE="$HOME/.config/eclipsectl-cli/daemon.pid"
 CONFIG_FILE_GLOBAL="$HOME/.config/eclipsectl-cli/config.json"
 CONFIG_FILE_LOCAL=".config/eclipsectl-cli/config.json"
 
+# When installed from a wheel (notably through pipx), use the Python
+# interpreter from the same environment as this script. Fall back to the
+# active/system Python when running directly from a source checkout.
+CLI_SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")
+CLI_BIN_DIR=$(dirname -- "$CLI_SCRIPT_PATH")
+if [ -z "${ECLIPSECTL_PYTHON:-}" ]; then
+    if [ -x "$CLI_BIN_DIR/python3" ]; then
+        ECLIPSECTL_PYTHON="$CLI_BIN_DIR/python3"
+    elif [ -x "$CLI_BIN_DIR/python" ]; then
+        ECLIPSECTL_PYTHON="$CLI_BIN_DIR/python"
+    else
+        ECLIPSECTL_PYTHON="python3"
+    fi
+fi
+
 # ===== Helper functions =====
 
 die() {
@@ -102,7 +117,7 @@ ensure_daemon() {
 
         # Start daemon via Python (capture stderr for errors)
         local daemon_log="/tmp/eclipse_daemon_startup.log"
-        python3 -m eclipsectl_cli.daemon >"$daemon_log" 2>&1 &
+        "$ECLIPSECTL_PYTHON" -m eclipsectl_cli.daemon >"$daemon_log" 2>&1 &
         local daemon_pid=$!
         local daemon_ready=false
 

@@ -74,8 +74,19 @@ See [ANALYSIS.md](docs/ANALYSIS.md) for architecture details.
 
 ### 3. Install eclipsectl-cli (WSL)
 
+From a GitHub Release wheel (recommended):
+
 ```bash
-cd /mnt/b/dev/eclipsectl-cli
+pipx install ./eclipsectl_cli-0.1.0-py3-none-any.whl
+```
+
+From a source checkout for development:
+
+```bash
+git clone https://github.com/jrame/eclipsectl-cli.git
+cd eclipsectl-cli
+python3 -m venv .venv
+source .venv/bin/activate
 bash install.sh
 ```
 
@@ -173,7 +184,7 @@ See [ECLIPSECTL_MCP_TOOLS.md](docs/ECLIPSECTL_MCP_TOOLS.md) for complete referen
 ### Setup
 
 ```bash
-git clone https://github.com/Metherlance/eclipsectl-cli
+git clone https://github.com/jrame/eclipsectl-cli
 cd eclipsectl-cli
 python -m venv .venv
 source .venv/bin/activate
@@ -270,10 +281,23 @@ See [ANALYSIS.md](docs/ANALYSIS.md) for detailed options.
 - **Launch configurations**: Develop custom plugin extension
 - **Concurrency**: Support multiple JavaLens instances
 
-## build
+## Build a release wheel
 
+```bash
 pip install build
 python -m build
+```
+
+The wheel in `dist/` contains both the Python package and the `eclipse` Bash
+command. Test it in an isolated environment with:
+
+```bash
+pipx install --force ./dist/eclipsectl_cli-0.1.0-py3-none-any.whl
+eclipse --help
+```
+
+Attach the `.whl` file to the corresponding GitHub Release. End users only
+need that single asset and `pipx`.
 
 ## License
 

@@ -1,6 +1,7 @@
 """Regression tests for the Bash CLI daemon lifecycle helpers."""
 
 import os
+import shutil
 import socket
 import subprocess
 from pathlib import Path
@@ -10,11 +11,14 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CLI_SCRIPT = REPOSITORY_ROOT / "bin" / "eclipse"
 
 
-def _run_sourced_cli(command: str, home: Path) -> subprocess.CompletedProcess[str]:
+def _run_sourced_cli(
+    command: str, home: Path, cli_script: Path = CLI_SCRIPT
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["HOME"] = str(home)
+    env.pop("ECLIPSECTL_PYTHON", None)
     return subprocess.run(
-        ["bash", "-c", f'source "$1"; {command}', "bash", str(CLI_SCRIPT)],
+        ["bash", "-c", f'source "$1"; {command}', "bash", str(cli_script)],
         cwd=REPOSITORY_ROOT,
         env=env,
         check=False,
@@ -67,3 +71,25 @@ def test_sourcing_cli_does_not_execute_main(tmp_path):
     assert result.returncode == 0, result.stderr
     assert result.stdout == ""
     assert result.stderr == ""
+
+
+def test_packaged_cli_uses_python_from_its_installation_environment(tmp_path):
+    environment_bin = tmp_path / "venv" / "bin"
+    environment_bin.mkdir(parents=True)
+    installed_cli = environment_bin / "eclipse"
+    installed_python = environment_bin / "python3"
+    shutil.copy2(CLI_SCRIPT, installed_cli)
+    installed_python.write_text("#!/bin/sh\nexit 0\n")
+    installed_python.chmod(0o755)
+
+    exposed_bin = tmp_path / "exposed-bin"
+    exposed_bin.mkdir()
+    exposed_cli = exposed_bin / "eclipse"
+    exposed_cli.symlink_to(installed_cli)
+
+    result = _run_sourced_cli(
+        'printf "%s" "$ECLIPSECTL_PYTHON"', tmp_path / "home", exposed_cli
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert Path(result.stdout) == installed_python

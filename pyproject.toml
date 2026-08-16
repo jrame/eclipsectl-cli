@@ -4,13 +4,12 @@ version = "0.1.0"
 description = "MCP server for controlling Eclipse IDE - refactoring, LSP features, and file operations"
 requires-python = ">=3.10"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     {name = "eclipsectl-cli Contributors", email = "your.email@example.com"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -23,22 +22,19 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/Metherlance/eclipsectl-cli"
-"Bug Tracker" = "https://github.com/Metherlance/eclipsectl-cli/issues"
+"Homepage" = "https://github.com/jrame/eclipsectl-cli"
+"Bug Tracker" = "https://github.com/jrame/eclipsectl-cli/issues"
 
 [project.scripts]
-# eclipse command is provided by bin/eclipse bash script (fast, ~25ms)
-# All MCP tools are accessible via the bash CLI + daemon architecture
 eclipsectl-cli = "eclipsectl_cli:cli_entry_point"
 
 [build-system]
-requires = ["setuptools>=42"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-
-# bash CLI script installed via: ln -sf $(pwd)/bin/eclipse /usr/local/bin/eclipse
+script-files = ["bin/eclipse"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"

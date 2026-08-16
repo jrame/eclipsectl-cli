@@ -1,7 +1,7 @@
 #!/bin/bash
-# Installation script for eclipsectl-cli with bash CLI
+# Installation script for eclipsectl-cli
 
-set -e
+set -euo pipefail
 
 echo "📦 Installing eclipsectl-cli..."
 
@@ -11,15 +11,12 @@ if [ -f .venv/bin/activate ]; then
     echo "✅ Using virtualenv: .venv"
 fi
 
-# Install Python package
-pip install -e .
+# The wheel/editable metadata installs both the Python entry point and the
+# Bash wrapper declared by tool.setuptools.script-files.
+python -m pip install -e .
 
-# Install bash CLI wrapper (setup.py cmdclass not triggered in editable mode)
-echo ""
-echo "⚡ Installing bash CLI wrapper..."
-BIN_DIR=$(python3 -c "import sys; print(sys.prefix + '/bin')")
-cp bin/eclipse "$BIN_DIR/eclipse"
-chmod +x "$BIN_DIR/eclipse"
+BIN_DIR=$(python -c "import sys; print(sys.prefix + '/bin')")
+test -x "$BIN_DIR/eclipse"
 echo "✅ Bash CLI installed to $BIN_DIR/eclipse"
 
 echo ""
