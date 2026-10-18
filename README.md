@@ -1,310 +1,113 @@
-# CLI Eclipse
+# eclipsectl
 
-**Command-line interface for controlling Eclipse IDE** via the eclipsectl-mcp plugin.
+Native Rust command-line control of Eclipse IDE through the **eclipsectl-mcp** plugin. The same code builds `eclipsectl.exe` for Windows and `eclipsectl` for Linux/WSL. No Python, Bash, jq or netcat is required to run the CLI.
 
-## Overview
+The executable contains both the CLI and its automatically started daemon. Windows uses a named pipe restricted to the current user; WSL uses a private Unix socket. Each environment has its own configuration and daemon. The Eclipse plugin continues to speak MCP Streamable HTTP. This project no longer exposes an MCP stdio server.
 
-**eclipsectl-cli** provides a **CLI tool** (`eclipse` command) to control Eclipse IDE from bash/shell, perfect for **Claude Code Skills** and automation scripts.
+## Install
 
-```
-┌─── Shell / Claude Skills ──┐     ┌─── Windows ──────────┐
-│  eclipse project list      │     │  Eclipse IDE         │
-│  eclipse test all          │ ──► │  eclipsectl-mcp (:8765)    │
-│  eclipse editor current    │     │    - 74+ MCP tools   │
-└────────────────────────────┘     └──────────────────────┘
-```
+Download the Windows x64 ZIP or Linux x64 tar.gz from [Releases](https://github.com/jrame/eclipsectl-cli/releases), verify its SHA-256 checksum, extract it and run the included installer. Source installation requires Rust 1.88 or newer and a native C/C++ build toolchain (MSVC on Windows, a C compiler and CMake on Linux).
 
-### Two modes available
-
-1. **CLI mode** ⭐ **RECOMMENDED** - Direct bash commands
-   - Use: `eclipse project list`, `eclipse test all`, etc.
-   - Perfect for: Claude Code Skills, shell scripts, automation
-   - See: [CLI_USAGE.md](CLI_USAGE.md)
-
-2. **MCP Server mode** - For MCP integration (legacy)
-   - Use: Add to `.mcp.json` for MCP protocol
-   - See Troubleshooting section below for connection issues
-
-## Features
-
-### Available (via eclipsectl-mcp)
-- ✅ **File Operations**: Create, edit, replace, delete files and directories
-- ✅ **Code Analysis**: Get JavaDoc, source code, compilation errors
-- ✅ **Project Management**: List projects, get layout, read properties
-- ✅ **Tests**: Run JUnit tests (all, package, class, method level)
-- ✅ **Build**: Execute Maven builds
-- ✅ **Editor**: Get current file, selection, format code
-- ✅ **Console**: Access Eclipse console output
-- ✅ **Workspace**: Refresh files and projects
-
-- ✅ **Workspace**: Refresh files, get workspace info
-- ✅ **Refactoring**: Rename types/packages, move types, extract methods
-- ✅ **Launch Configs**: Create and inspect Java Application configurations, manage their environment, and run/debug them
-- ✅ **Debug**: Breakpoints, step through, inspect variables, evaluate expressions
-- ✅ **Coverage**: Run with EclEmma code coverage, get reports
-- ✅ **Code Generation**: Generate getters/setters, toString, equals/hashCode
-
-> **Tip**: After editing files externally (e.g., from Claude Code), use `eclipse refresh save <paths>` to sync Eclipse and trigger save actions (format on save, organize imports).
-
-See [ANALYSIS.md](docs/ANALYSIS.md) for architecture details.
-
-## Quick Start
-
-### 1. Install eclipsectl-mcp plugin in Eclipse (Windows)
-
-**Option A: Eclipse Marketplace**
-1. Open Eclipse
-2. Help → Eclipse Marketplace
-3. Search "eclipsectl-mcp"
-4. Install and restart Eclipse
-
-**Option B: Update Site**
-1. Help → Install New Software
-2. Add site: `https://gradusnikov.github.io/eclipse-chatgpt-plugin/`
-3. Install and restart Eclipse
-
-### 2. Configure eclipsectl-mcp HTTP Server
-
-1. Window → Preferences → eclipsectl-mcp
-2. Enable "HTTP MCP Server"
-3. Set hostname: `localhost`
-4. Set port: `8124`
-5. Generate Bearer token (save it!)
-6. Apply and restart Eclipse
-
-### 3. Install eclipsectl-cli (WSL)
-
-From a GitHub Release wheel (recommended):
-
-```bash
-pipx install ./eclipsectl_cli-0.1.0-py3-none-any.whl
+```powershell
+# Windows: extracted archive or source checkout
+.\install.ps1
+eclipsectl --help
 ```
 
-From a source checkout for development:
-
-```bash
-git clone https://github.com/jrame/eclipsectl-cli.git
-cd eclipsectl-cli
-python3 -m venv .venv
-source .venv/bin/activate
-bash install.sh
+```sh
+# WSL: extracted archive or source checkout
+sh install.sh
+eclipsectl --help
 ```
 
-### 4. Configure eclipsectl-cli
+Installers use `$HOME/.local/bin` (Windows: `$env:USERPROFILE\.local\bin`). Add it to PATH if needed. They do not edit shell profiles or system settings. `cargo install --locked --path .` is also supported.
 
-Create `~/.config/eclipsectl-cli/config.json`:
+The Windows runtime is linked statically, so a Visual C++ redistributable is not required. A Linux archive suffixed `musl` contains a static executable; it uses the same CLI and installer.
+
+## Configuration
+
+Enable the HTTP MCP server in Eclipse's eclipsectl-mcp preferences and generate a Bearer token. The default URL is `http://localhost:8124`; configure the actual address and port explicitly if different.
+
+Create `.config/eclipsectl-cli/config.toml` in the directory from which you invoke the CLI, or a user configuration:
+
+| Environment | User configuration |
+|---|---|
+| Windows | `%APPDATA%\eclipsectl-cli\config.toml` |
+| WSL/Linux | `$XDG_CONFIG_HOME/eclipsectl-cli/config.toml`, default `~/.config/eclipsectl-cli/config.toml` |
+
+```toml
+eclipse_url = "http://localhost:8124"
+connect_timeout = 30
+operation_timeout = 300
+# Prefer ECLIPSE_TOKEN to storing bearer_token here.
+```
+
+```powershell
+$env:ECLIPSE_TOKEN = "YOUR_TOKEN"
+eclipsectl doctor
+```
+
+```sh
+export ECLIPSE_TOKEN='YOUR_TOKEN'
+eclipsectl doctor
+```
+
+Precedence applies **per field**: CLI options, environment, project TOML, user TOML, defaults. Environment variables: `ECLIPSE_URL`, `ECLIPSE_TOKEN`, `ECLIPSE_CONNECT_TIMEOUT`, `ECLIPSE_OPERATION_TIMEOUT`. Timeouts are seconds, from 1 to 86400. Invalid configuration fails explicitly.
+
+The project file is resolved from the current working directory, including on Windows. If `.config/eclipsectl-cli/config.toml` is absent, `.eclipsectl.toml` in that same directory is accepted as a fallback. When both exist, only the nested file is used. Configuration is reread on every command and sent to the daemon; editing the TOML requires no reload command or daemon restart.
+
+Migrate old JSON explicitly; the destination must not exist:
+
+```sh
+eclipsectl config migrate --from .config/eclipsectl-cli/config.json --to .config/eclipsectl-cli/config.toml
+```
+
+The old `timeout` becomes `connect_timeout`; operation timeout defaults to 300 seconds. The old `verbose` setting is replaced by the CLI option. The config directory remains named `eclipsectl-cli`; the executable is always `eclipsectl`.
+
+## Commands
+
+```sh
+eclipsectl project list
+eclipsectl workspace info --json
+eclipsectl build maven example clean test
+eclipsectl test class example com.example.MainTest
+eclipsectl editor open 'B:\dev\example\src\Main.java' --line 12
+eclipsectl search text TODO --pattern-file '*.java'
+eclipsectl source format src/Main.java --project example
+eclipsectl launch create-java com.example.Main --project example --name 'Main dev' --env PROFILE=dev
+eclipsectl launch env 'Main dev' --env PROFILE=test --inherit-env false
+eclipsectl debug run 'Main dev' --wait
+eclipsectl daemon status
+```
+
+All **83 command bindings / 82 distinct MCP tools / 7 endpoints** are listed in [the command inventory](docs/COMMANDS.md). Use `eclipsectl <family> <command> --help` for details. See [CLI_USAGE.md](CLI_USAGE.md), [DAEMON.md](DAEMON.md), and [the real Eclipse smoke test procedure](docs/VALIDATION.md).
+
+Human output contains Eclipse text. `--json` preserves the complete MCP result, including non-text content and `structuredContent`:
 
 ```json
-{
-  "eclipse_url": "http://localhost:8124",
-  "bearer_token": "YOUR_BEARER_TOKEN_HERE"
-}
+{"ok":true,"result":{"content":[{"type":"text","text":"..."}]}}
 ```
 
-Or use environment variables:
-```bash
-export ECLIPSE_URL="http://localhost:8124"
-export ECLIPSE_TOKEN="YOUR_BEARER_TOKEN"
-```
+Failures use `{"ok":false,"error":{"code":"...","message":"...","details":{}}}`; `details` appears only when available. Exit codes: 0 success, 1 execution/configuration failure, 2 invalid CLI arguments. Diagnostics go to stderr. `--verbose` enables application diagnostics and `--quiet` suppresses logs; errors remain visible. The application never logs tokens, source or launch environment values. Explicit command results can contain requested source code or environment values.
 
-### 5. Test the connection
+## Windows and WSL paths
 
-```bash
-# From WSL terminal
-eclipse project list
-```
+Pass Windows drive paths, UNC paths, or paths on mounted Windows drives in WSL. WSL uses `wslpath`, respecting custom mount roots. Project-relative paths stay relative; filesystem-relative paths resolve in the client before IPC. Expressions, source, search patterns, JVM arguments and environment values are never translated.
 
-Create and inspect a Java launch configuration:
+Projects under `/home` and `\\wsl.localhost\...` are outside this version's scope. Store Eclipse projects on a Windows drive. The upstream refresh API uses comma-separated paths, so refresh rejects paths containing commas.
 
-```bash
-eclipse debug config create-java com.example.Main \
-  --type java --project example --env PROFILE=dev
-eclipse debug config show Main
-eclipse debug run Main
-```
-
-### 6. Add to Claude Code (optional)
-
-Edit `~/.claude/config.json` or project `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "eclipse": {
-      "command": "eclipsectl-cli"
-    }
-  }
-}
-```
-
-## Usage
-
-Once configured, use Eclipse commands from Claude Code:
-
-```
-@eclipse list all projects in workspace
-@eclipse create a new Java class User in package com.example.model
-@eclipse run all tests in the project
-@eclipse get compilation errors
-@eclipse format the current file
-@eclipse refresh workspace
-```
-
-## Path Conversion
-
-eclipsectl-cli automatically converts paths between WSL and Windows:
-
-| WSL Path | Windows Path |
-|----------|--------------|
-| `/mnt/c/projects/MyApp/src/Main.java` | `C:\projects\MyApp\src\Main.java` |
-| `/mnt/d/workspace/Test.java` | `D:\workspace\Test.java` |
-
-**Important**: Your Java projects should be on `/mnt/c/` (or `/mnt/d/`) so both WSL and Windows can access them.
-
-## Architecture
-
-### Components
-
-1. **Claude Code** (WSL) - AI assistant interface
-2. **eclipsectl-cli** (WSL) - MCP wrapper with path conversion
-3. **eclipsectl-mcp Plugin** (Windows) - HTTP MCP server in Eclipse
-4. **Eclipse IDE** (Windows) - Java development environment
-
-### MCP Tools Exposed
-
-See [ECLIPSECTL_MCP_TOOLS.md](docs/ECLIPSECTL_MCP_TOOLS.md) for complete reference.
-
-**Summary**:
-- `eclipse-coder`: 5 file operation tools
-- `eclipse-ide`: 18 Java/IDE integration tools
-- `duck-duck-search`, `webpage-reader`, `time`, `memory`: Utility tools
+**WSL networking:** mirrored mode can access Eclipse Windows at `localhost`. NAT mode requires the Windows host address, an accessible plugin bind address and a firewall permitting its port. The Windows host address is visible through `ip route show default`. A plugin listening only on Windows loopback cannot be reached through the NAT host address. The CLI does not rewrite URLs or change network settings. See [Microsoft's documentation](https://learn.microsoft.com/windows/wsl/networking).
 
 ## Development
 
-### Setup
-
-```bash
-git clone https://github.com/jrame/eclipsectl-cli
-cd eclipsectl-cli
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+```sh
+cargo build --locked
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked --all-targets
+cargo build --locked --release
 ```
 
-### Run tests
+The library separates CLI, registry, paths, configuration, IPC, MCP sessions and daemon. `src/operations.json` is the shared command contract; keep it synchronized with `docs/COMMANDS.md`. Commit `Cargo.lock`.
 
-```bash
-pytest
-# or
-pytest -m unit  # unit tests only
-```
-
-### Project structure
-
-```
-eclipsectl-cli/
-├── src/eclipsectl_cli/
-│   ├── __init__.py
-│   ├── cli.py              # Entry point
-│   ├── server.py           # MCP server
-│   ├── config.py           # Configuration
-│   ├── eclipse_client.py   # HTTP client for eclipsectl-mcp
-│   ├── tools.py            # MCP tool definitions
-│   └── path_converter.py   # WSL↔Windows path conversion
-├── docs/
-│   ├── ANALYSIS.md         # Complete analysis of options
-│   └── ECLIPSECTL_MCP_TOOLS.md   # eclipsectl-mcp tools reference
-├── tests/
-└── pyproject.toml
-```
-
-## Troubleshooting
-
-### Cannot connect to eclipsectl-mcp
-
-**Error**: "Cannot connect to Eclipse eclipsectl-mcp at http://localhost:8124"
-
-**Solutions**:
-1. Verify Eclipse is running on Windows
-2. Verify eclipsectl-mcp plugin is installed
-3. Verify HTTP MCP Server is enabled (Preferences → eclipsectl-mcp)
-4. Check port 8124 is not blocked by firewall
-5. Test connection from WSL:
-   ```bash
-   curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8124/mcp
-   ```
-
-### Bearer token not configured
-
-**Error**: "No bearer token configured"
-
-**Solutions**:
-1. Set `ECLIPSE_TOKEN` env var
-2. Add `bearer_token` to `~/.config/eclipsectl-cli/config.json`
-3. Verify the token was copied correctly from Eclipse
-
-### Windows 11 networking
-
-On Windows 11 22H2+, enable mirrored mode in `.wslconfig`:
-```ini
-[wsl2]
-networkingMode=mirrored
-```
-
-For older Windows versions, use Windows IP instead of localhost:
-```bash
-# Get Windows IP from WSL
-ip route show | grep -i default | awk '{ print $3}'
-
-# Example config with Windows IP
-{
-  "eclipse_url": "http://169.254.x.x:8124",
-  "bearer_token": "YOUR_TOKEN"
-}
-```
-
-### Path conversion issues
-
-**Problem**: Files not found in Eclipse
-
-**Solution**: Ensure projects are on Windows drives accessible from WSL:
-- ✅ `/mnt/c/projects/MyApp` → OK
-- ✅ `/mnt/d/workspace/Test` → OK
-- ❌ `/home/user/local-project` → NOT accessible from Eclipse
-
-## Future Extensions
-
-See [ANALYSIS.md](docs/ANALYSIS.md) for detailed options.
-
-**Possible additions**:
-- **Advanced refactoring**: Add JavaLens-MCP as secondary server
-- **Launch configurations**: Develop custom plugin extension
-- **Concurrency**: Support multiple JavaLens instances
-
-## Build a release wheel
-
-```bash
-pip install build
-python -m build
-```
-
-The wheel in `dist/` contains both the Python package and the `eclipse` Bash
-command. Test it in an isolated environment with:
-
-```bash
-pipx install --force ./dist/eclipsectl_cli-0.1.0-py3-none-any.whl
-eclipse --help
-```
-
-Attach the `.whl` file to the corresponding GitHub Release. End users only
-need that single asset and `pipx`.
-
-## License
-
-MIT
-
-## Credits
-
-Built on top of:
-- [eclipsectl-mcp (gradusnikov/eclipse-chatgpt-plugin)](https://github.com/gradusnikov/eclipse-chatgpt-plugin)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
+CI checks Windows/Linux. Tags named `v*` build and publish native x64 archives with SHA-256 checksums. Real Eclipse validation requires a configured plugin and is separate from mock-based CI.

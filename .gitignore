@@ -1,4 +1,6 @@
 # Python
+/target/
+/.eclipsectl.toml
 __pycache__/
 *.py[cod]
 *.class

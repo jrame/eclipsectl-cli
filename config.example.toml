@@ -1,0 +1,6 @@
+# Copy to .config/eclipsectl-cli/config.toml in the current directory, or the user configuration directory.
+eclipse_url = "http://localhost:8124"
+connect_timeout = 30
+operation_timeout = 300
+# Prefer the ECLIPSE_TOKEN environment variable.
+# bearer_token = "YOUR_TOKEN"

@@ -1,0 +1,45 @@
+[package]
+name = "eclipsectl-cli"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Native Windows and WSL CLI for Eclipse IDE"
+license = "MIT"
+repository = "https://github.com/jrame/eclipsectl-cli"
+
+[[bin]]
+name = "eclipsectl"
+path = "src/main.rs"
+
+[lib]
+name = "eclipsectl"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.6", features = ["string"] }
+dirs = "6"
+fs2 = "0.4"
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
+rmcp = { version = "3.5.1", default-features = false, features = ["client", "reqwest", "transport-streamable-http-client-reqwest"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1", features = ["full"] }
+toml = "0.9"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_System_Memory"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+axum = "0.8"
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = true

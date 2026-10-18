@@ -1,0 +1,1754 @@
+[
+  {
+    "command": "workspace info",
+    "tool": "getWorkspaceInfo",
+    "server": "eclipse-ide",
+    "description": "Get workspace information (location, project counts, Java/Eclipse versions).",
+    "args": []
+  },
+  {
+    "command": "project list",
+    "tool": "listProjects",
+    "server": "eclipse-ide",
+    "description": "List all projects in Eclipse workspace.",
+    "args": []
+  },
+  {
+    "command": "project layout",
+    "tool": "getProjectLayout",
+    "server": "eclipse-ide",
+    "description": "Get project structure.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "project properties",
+    "tool": "getProjectProperties",
+    "server": "eclipse-ide",
+    "description": "Get project properties.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "project read",
+    "tool": "readProjectResource",
+    "server": "eclipse-ide",
+    "description": "Read a file from project (relative path).",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "resourcePath",
+        "name": "path",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "project import",
+    "tool": "importProject",
+    "server": "eclipse-ide",
+    "description": "Import a project into the workspace.",
+    "args": [
+      {
+        "key": "projectPath",
+        "name": "path",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true
+      }
+    ]
+  },
+  {
+    "command": "project mkdir",
+    "tool": "createDirectories",
+    "server": "eclipse-ide",
+    "description": "Create directories (and parents) within a project.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "directoryPath",
+        "name": "path",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "code javadoc",
+    "tool": "getJavaDoc",
+    "server": "eclipse-ide",
+    "description": "Get JavaDoc for a fully qualified class name.",
+    "args": [
+      {
+        "key": "fullyQualifiedName",
+        "name": "fqn",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "code source",
+    "tool": "getSource",
+    "server": "eclipse-ide",
+    "description": "Get source code for a fully qualified class name.",
+    "args": [
+      {
+        "key": "fullyQualifiedClassName",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "code hierarchy",
+    "tool": "getMethodCallHierarchy",
+    "server": "eclipse-ide",
+    "description": "Get method call hierarchy by class name and method.",
+    "args": [
+      {
+        "key": "fullyQualifiedClassName",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "methodName",
+        "name": "method",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "build maven",
+    "tool": "runMavenBuild",
+    "server": "eclipse-ide",
+    "description": "Run Maven build with given goals.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "goals",
+        "name": "goals",
+        "kind": "strings",
+        "positional": true,
+        "required": true,
+        "wire": "space"
+      }
+    ]
+  },
+  {
+    "command": "build errors",
+    "tool": "getCompilationErrors",
+    "server": "eclipse-ide",
+    "description": "Get compilation errors.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "test all",
+    "tool": "runAllTests",
+    "server": "eclipse-ide",
+    "description": "Run all tests in workspace.",
+    "args": []
+  },
+  {
+    "command": "test package",
+    "tool": "runPackageTests",
+    "server": "eclipse-ide",
+    "description": "Run tests for a package.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "packageName",
+        "name": "package",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "test class",
+    "tool": "runClassTests",
+    "server": "eclipse-ide",
+    "description": "Run tests for a class.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "test method",
+    "tool": "runTestMethod",
+    "server": "eclipse-ide",
+    "description": "Run a specific test method.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "methodName",
+        "name": "method",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "editor current",
+    "tool": "getCurrentlyOpenedFile",
+    "server": "eclipse-ide",
+    "description": "Get currently opened file in Eclipse.",
+    "args": []
+  },
+  {
+    "command": "editor selection",
+    "tool": "getEditorSelection",
+    "server": "eclipse-ide",
+    "description": "Get current editor selection.",
+    "args": []
+  },
+  {
+    "command": "editor list",
+    "tool": "getOpenEditors",
+    "server": "eclipse-ide",
+    "description": "List all open editors with active marker and modified status.",
+    "args": []
+  },
+  {
+    "command": "editor open",
+    "tool": "openFile",
+    "server": "eclipse",
+    "description": "Open a file in the Eclipse editor, optionally at a specific line.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "wire": "string"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "console output",
+    "tool": "getConsoleOutput",
+    "server": "eclipse-ide",
+    "description": "Get Eclipse console output.",
+    "args": [
+      {
+        "key": "consoleName",
+        "name": "name",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "search text",
+    "tool": "fileSearch",
+    "server": "eclipse-ide",
+    "description": "Search for text in workspace files.",
+    "args": [
+      {
+        "key": "containingText",
+        "name": "pattern",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "fileNamePatterns",
+        "name": "pattern-file",
+        "kind": "strings",
+        "wire": "csv"
+      }
+    ]
+  },
+  {
+    "command": "search regex",
+    "tool": "fileSearchRegExp",
+    "server": "eclipse-ide",
+    "description": "Search workspace files using regex.",
+    "args": [
+      {
+        "key": "pattern",
+        "name": "pattern",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "fileNamePatterns",
+        "name": "pattern-file",
+        "kind": "strings",
+        "wire": "csv"
+      }
+    ]
+  },
+  {
+    "command": "search files",
+    "tool": "findFiles",
+    "server": "eclipse-ide",
+    "description": "Find workspace files matching glob patterns.",
+    "args": [
+      {
+        "key": "fileNamePatterns",
+        "name": "pattern-file",
+        "kind": "strings",
+        "wire": "csv"
+      },
+      {
+        "key": "maxResults",
+        "name": "max",
+        "kind": "string",
+        "default": "200"
+      }
+    ]
+  },
+  {
+    "command": "search replace",
+    "tool": "searchAndReplace",
+    "server": "eclipse-ide",
+    "description": "Search and replace text across workspace files.",
+    "args": [
+      {
+        "key": "containingText",
+        "name": "text",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "replacementText",
+        "name": "replacement",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "fileNamePatterns",
+        "name": "pattern-file",
+        "kind": "csv"
+      }
+    ]
+  },
+  {
+    "command": "search type",
+    "tool": "open_type",
+    "server": "eclipse",
+    "description": "Search for a type by name using Eclipse's Open Type search.",
+    "args": [
+      {
+        "key": "name",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "search references",
+    "tool": "findReferences",
+    "server": "eclipse",
+    "description": "Find all references to a Java element.",
+    "args": [
+      {
+        "key": "elementType",
+        "name": "element-type",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "elementName",
+        "name": "element-name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "scope",
+        "name": "scope",
+        "kind": "string",
+        "default": "workspace"
+      },
+      {
+        "key": "includeSubtypes",
+        "name": "include-subtypes",
+        "kind": "flag",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "search hierarchy",
+    "tool": "getTypeHierarchy",
+    "server": "eclipse",
+    "description": "Get type hierarchy (superclasses, subclasses, interfaces).",
+    "args": [
+      {
+        "key": "fullyQualifiedClassName",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "search call-hierarchy",
+    "tool": "call_hierarchy",
+    "server": "eclipse",
+    "description": "Get call hierarchy for a method (callers and callees).",
+    "args": [
+      {
+        "key": "fullyQualifiedClassName",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "methodName",
+        "name": "method",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "methodSignature",
+        "name": "signature",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "search implementations",
+    "tool": "getImplementations",
+    "server": "eclipse",
+    "description": "Find implementations of an interface/abstract class/method.",
+    "args": [
+      {
+        "key": "fullyQualifiedClassName",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "methodName",
+        "name": "method",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "problems list",
+    "tool": "getCompilationErrors",
+    "server": "eclipse-ide",
+    "description": "Get compilation errors.",
+    "args": [
+      {
+        "key": "severity",
+        "name": "severity",
+        "kind": "string",
+        "default": "ERROR",
+        "choices": [
+          "ERROR",
+          "WARNING",
+          "ALL"
+        ]
+      },
+      {
+        "key": "maxResults",
+        "name": "max",
+        "kind": "integer",
+        "default": "10",
+        "wire": "string"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "problems quickfixes",
+    "tool": "getQuickFixes",
+    "server": "eclipse",
+    "description": "Get available Quick Fixes for problems in a file.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "string"
+      },
+      {
+        "key": "problemId",
+        "name": "problem-id",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "problems apply-fix",
+    "tool": "applyQuickFix",
+    "server": "eclipse",
+    "description": "Apply a Quick Fix to resolve a problem.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      },
+      {
+        "key": "fixIndex",
+        "name": "index",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "problems markers",
+    "tool": "getMarkers",
+    "server": "eclipse",
+    "description": "Get all markers (errors, warnings, infos) for a file.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "maven list",
+    "tool": "listMavenProjects",
+    "server": "eclipse-ide",
+    "description": "List all Maven projects in workspace.",
+    "args": []
+  },
+  {
+    "command": "maven effective-pom",
+    "tool": "getEffectivePom",
+    "server": "eclipse-ide",
+    "description": "Get effective POM for a Maven project.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "maven dependencies",
+    "tool": "getProjectDependencies",
+    "server": "eclipse-ide",
+    "description": "Get Maven project dependencies.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "maven find-tests",
+    "tool": "findTestClasses",
+    "server": "eclipse-ide",
+    "description": "Find all test classes in a project.",
+    "args": [
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "refactor rename-type",
+    "tool": "refactorRenameJavaType",
+    "server": "eclipse-refactor",
+    "description": "Rename a Java class/interface/enum with all references.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "newTypeName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "refactor move-type",
+    "tool": "refactorMoveJavaType",
+    "server": "eclipse-refactor",
+    "description": "Move a Java class/interface/enum to a different package.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "targetPackage",
+        "name": "package",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "refactor rename-file",
+    "tool": "renameFile",
+    "server": "eclipse-refactor",
+    "description": "Rename a file in the project.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "newFileName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "refactor rename-package",
+    "tool": "refactorRenamePackage",
+    "server": "eclipse-refactor",
+    "description": "Rename a Java package with all references.",
+    "args": [
+      {
+        "key": "packageName",
+        "name": "package",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "newPackageName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "refactor move-resource",
+    "tool": "moveResource",
+    "server": "eclipse-refactor",
+    "description": "Move a file or folder to a different location.",
+    "args": [
+      {
+        "key": "sourcePath",
+        "name": "source",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "targetPath",
+        "name": "target",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "refactor extract-method",
+    "tool": "refactorExtractMethod",
+    "server": "eclipse-refactor",
+    "description": "Extract code lines into a new method.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "startLine",
+        "name": "start-line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      },
+      {
+        "key": "endLine",
+        "name": "end-line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      },
+      {
+        "key": "methodName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "visibility",
+        "name": "visibility",
+        "kind": "string",
+        "default": "private",
+        "choices": [
+          "private",
+          "protected",
+          "public",
+          "package"
+        ]
+      }
+    ]
+  },
+  {
+    "command": "codegen getters-setters",
+    "tool": "generateGettersSetters",
+    "server": "eclipse-codegen",
+    "description": "Generate getter and/or setter methods for fields.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string"
+      },
+      {
+        "key": "fieldNames",
+        "name": "field",
+        "kind": "csv"
+      },
+      {
+        "key": "generateGetters",
+        "name": "getters",
+        "kind": "boolean",
+        "default": "true",
+        "wire": "string"
+      },
+      {
+        "key": "generateSetters",
+        "name": "setters",
+        "kind": "boolean",
+        "default": "true",
+        "wire": "string"
+      },
+      {
+        "key": "insertionPoint",
+        "name": "insertion-point",
+        "kind": "string",
+        "default": "end"
+      }
+    ]
+  },
+  {
+    "command": "codegen tostring",
+    "tool": "generateToStringEqualsHashCode",
+    "server": "eclipse-codegen",
+    "description": "Generate toString(), equals(), and/or hashCode() methods.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string"
+      },
+      {
+        "key": "fieldNames",
+        "name": "field",
+        "kind": "csv"
+      },
+      {
+        "key": "generateToString",
+        "name": "tostring",
+        "kind": "boolean",
+        "default": "true",
+        "wire": "string"
+      },
+      {
+        "key": "generateEquals",
+        "name": "equals",
+        "kind": "boolean",
+        "default": "true",
+        "wire": "string"
+      },
+      {
+        "key": "generateHashCode",
+        "name": "hashcode",
+        "kind": "boolean",
+        "default": "true",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "codegen implement",
+    "tool": "implementOverrideMethods",
+    "server": "eclipse-codegen",
+    "description": "Implement or override methods from superclass/interfaces.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string"
+      },
+      {
+        "key": "methodNames",
+        "name": "method",
+        "kind": "csv"
+      }
+    ]
+  },
+  {
+    "command": "source organize-imports",
+    "tool": "organizeImports",
+    "server": "eclipse-source",
+    "description": "Organize imports in a Java file.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "source organize-package",
+    "tool": "organizeImportsInPackage",
+    "server": "eclipse-source",
+    "description": "Organize imports in all files in a package.",
+    "args": [
+      {
+        "key": "packageName",
+        "name": "package",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "source format",
+    "tool": "formatFile",
+    "server": "eclipse-source",
+    "description": "Format code according to Eclipse formatter.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "lines",
+        "name": "lines",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "java read",
+    "tool": "readJava",
+    "server": "eclipse-source",
+    "description": "Read Java class structure (fields, methods, constructors, inner types).",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "java write",
+    "tool": "writeJava",
+    "server": "eclipse-source",
+    "description": "Write a code member (method, field, constructor, inner class) into a Java class.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string"
+      },
+      {
+        "key": "newSource",
+        "name": "source",
+        "kind": "string",
+        "stdin": true
+      }
+    ]
+  },
+  {
+    "command": "java remove",
+    "tool": "removeJava",
+    "server": "eclipse-source",
+    "description": "Remove named members from a Java class.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string"
+      },
+      {
+        "key": "members",
+        "name": "members",
+        "kind": "string",
+        "stdin": true
+      }
+    ]
+  },
+  {
+    "command": "java remove-lines",
+    "tool": "removeLines",
+    "server": "eclipse-source",
+    "description": "Remove line ranges from a Java file.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lines",
+        "name": "lines",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "java reset-read-gate",
+    "tool": "resetReadGate",
+    "server": "eclipse-source",
+    "description": "Reset the readJava gate for a file or all files.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "run",
+    "tool": "run",
+    "server": "eclipse",
+    "description": "Run an Eclipse launch configuration.",
+    "args": [
+      {
+        "key": "configuration",
+        "name": "configuration",
+        "kind": "string"
+      },
+      {
+        "key": "waitForCompletion",
+        "name": "wait",
+        "kind": "flag",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "refresh workspace",
+    "tool": "refresh",
+    "server": "eclipse",
+    "description": "Refresh Eclipse files or directories.",
+    "args": [
+      {
+        "key": "path",
+        "name": "paths",
+        "kind": "strings",
+        "positional": true,
+        "required": true,
+        "path": true
+      }
+    ]
+  },
+  {
+    "command": "refresh save",
+    "tool": "refreshAndSave",
+    "server": "eclipse",
+    "description": "Refresh and save files, triggering save actions.",
+    "args": [
+      {
+        "key": "paths",
+        "name": "paths",
+        "kind": "strings",
+        "positional": true,
+        "required": true,
+        "path": true
+      }
+    ]
+  },
+  {
+    "command": "debug breakpoint add",
+    "tool": "addBreakpoint",
+    "server": "eclipse-debug",
+    "description": "Add a breakpoint at a specific line.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      },
+      {
+        "key": "condition",
+        "name": "condition",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "command": "debug breakpoint remove",
+    "tool": "removeBreakpoint",
+    "server": "eclipse-debug",
+    "description": "Remove a breakpoint at a specific line.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "debug breakpoint enable",
+    "tool": "enableBreakpoint",
+    "server": "eclipse-debug",
+    "description": "Enable a breakpoint.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "debug breakpoint disable",
+    "tool": "disableBreakpoint",
+    "server": "eclipse-debug",
+    "description": "Disable a breakpoint.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "debug breakpoint list",
+    "tool": "listBreakpoints",
+    "server": "eclipse-debug",
+    "description": "List all breakpoints.",
+    "args": []
+  },
+  {
+    "command": "debug threads",
+    "tool": "listThreads",
+    "server": "eclipse-debug",
+    "description": "List all threads in the debug session.",
+    "args": []
+  },
+  {
+    "command": "debug thread-select",
+    "tool": "selectThread",
+    "server": "eclipse-debug",
+    "description": "Select a thread for inspection.",
+    "args": [
+      {
+        "key": "threadName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
+    "command": "debug run",
+    "tool": "runDebug",
+    "server": "eclipse-debug",
+    "description": "Launch a debug configuration.",
+    "args": [
+      {
+        "key": "configName",
+        "name": "configuration",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "waitForCompletion",
+        "name": "wait",
+        "kind": "flag",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "launch list",
+    "tool": "listRunConfigurations",
+    "server": "eclipse-debug",
+    "description": "List available launch configurations.",
+    "args": []
+  },
+  {
+    "command": "launch create-java",
+    "tool": "createJavaLaunchConfiguration",
+    "server": "eclipse-debug",
+    "description": "Create an Eclipse Java-based launch configuration.",
+    "args": [
+      {
+        "key": "mainClass",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "configName",
+        "name": "name",
+        "kind": "string"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "type",
+        "name": "type",
+        "kind": "string",
+        "choices": [
+          "java",
+          "junit4",
+          "junit5",
+          "testng",
+          "auto"
+        ]
+      },
+      {
+        "key": "programArguments",
+        "name": "args",
+        "kind": "string"
+      },
+      {
+        "key": "vmArguments",
+        "name": "vm-args",
+        "kind": "string"
+      },
+      {
+        "key": "workingDirectory",
+        "name": "cwd",
+        "kind": "string",
+        "path": true
+      },
+      {
+        "key": "environmentVariables",
+        "name": "env",
+        "kind": "env"
+      },
+      {
+        "key": "appendSystemEnvironment",
+        "name": "inherit-env",
+        "kind": "boolean",
+        "default": "true"
+      },
+      {
+        "key": "nameConflict",
+        "name": "name-conflict",
+        "kind": "string",
+        "default": "error",
+        "choices": [
+          "error",
+          "generate"
+        ]
+      }
+    ]
+  },
+  {
+    "command": "launch show",
+    "tool": "getLaunchConfiguration",
+    "server": "eclipse-debug",
+    "description": "Get launch configuration details, masking environment values by default.",
+    "args": [
+      {
+        "key": "configName",
+        "name": "configuration",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "includeEnvironmentValues",
+        "name": "include-environment-values",
+        "kind": "flag"
+      }
+    ]
+  },
+  {
+    "command": "launch env",
+    "tool": "updateLaunchEnvironment",
+    "server": "eclipse-debug",
+    "description": "Update only the environment of an existing launch configuration.",
+    "args": [
+      {
+        "key": "configName",
+        "name": "configuration",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "variables",
+        "name": "env",
+        "kind": "env"
+      },
+      {
+        "key": "removeVariables",
+        "name": "remove",
+        "kind": "strings"
+      },
+      {
+        "key": "updateMode",
+        "name": "mode",
+        "kind": "string",
+        "default": "merge",
+        "choices": [
+          "merge",
+          "replace"
+        ]
+      },
+      {
+        "key": "appendSystemEnvironment",
+        "name": "inherit-env",
+        "kind": "boolean"
+      }
+    ]
+  },
+  {
+    "command": "debug step-into",
+    "tool": "stepInto",
+    "server": "eclipse-debug",
+    "description": "Step into the next method call.",
+    "args": []
+  },
+  {
+    "command": "debug step-over",
+    "tool": "stepOver",
+    "server": "eclipse-debug",
+    "description": "Step over the current line.",
+    "args": []
+  },
+  {
+    "command": "debug step-return",
+    "tool": "stepReturn",
+    "server": "eclipse-debug",
+    "description": "Step out of the current method.",
+    "args": []
+  },
+  {
+    "command": "debug resume",
+    "tool": "resume",
+    "server": "eclipse-debug",
+    "description": "Resume execution.",
+    "args": []
+  },
+  {
+    "command": "debug suspend",
+    "tool": "suspend",
+    "server": "eclipse-debug",
+    "description": "Suspend execution.",
+    "args": []
+  },
+  {
+    "command": "debug terminate",
+    "tool": "terminate",
+    "server": "eclipse-debug",
+    "description": "Terminate the debug session.",
+    "args": []
+  },
+  {
+    "command": "debug status",
+    "tool": "getDebugStatus",
+    "server": "eclipse-debug",
+    "description": "Get current debug session status.",
+    "args": []
+  },
+  {
+    "command": "debug stacktrace",
+    "tool": "getStackTrace",
+    "server": "eclipse-debug",
+    "description": "Get the current stack trace.",
+    "args": [
+      {
+        "key": "maxDepth",
+        "name": "max-depth",
+        "kind": "integer",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "debug variables",
+    "tool": "getVariables",
+    "server": "eclipse-debug",
+    "description": "Get variables in the current scope.",
+    "args": [
+      {
+        "key": "stackFrameIndex",
+        "name": "frame",
+        "kind": "integer",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "debug eval",
+    "tool": "evaluateExpression",
+    "server": "eclipse-debug",
+    "description": "Evaluate an expression in the debug context.",
+    "args": [
+      {
+        "key": "expression",
+        "name": "expression",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "stackFrameIndex",
+        "name": "frame",
+        "kind": "integer",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "coverage run",
+    "tool": "runCoverage",
+    "server": "eclipse-coverage",
+    "description": "Launch a configuration with code coverage.",
+    "args": [
+      {
+        "key": "configName",
+        "name": "configuration",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "waitForCompletion",
+        "name": "wait",
+        "kind": "flag",
+        "wire": "string"
+      }
+    ]
+  },
+  {
+    "command": "coverage report",
+    "tool": "getCoverageReport",
+    "server": "eclipse-coverage",
+    "description": "Get the code coverage report.",
+    "args": []
+  },
+  {
+    "command": "coverage class",
+    "tool": "getClassCoverage",
+    "server": "eclipse-coverage",
+    "description": "Get coverage details for a specific class.",
+    "args": [
+      {
+        "key": "className",
+        "name": "class",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  }
+]
