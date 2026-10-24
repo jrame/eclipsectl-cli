@@ -220,6 +220,90 @@ fn wslpath_respects_mounts_and_rejects_linux_filesystem_projects() {
 }
 
 #[tokio::test]
+async fn run_wait_sends_a_boolean_and_waits_for_the_plugin_response() {
+    use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
+    use serde_json::json;
+    use std::sync::Arc;
+    use tokio::sync::{Notify, Semaphore};
+
+    let entered = Arc::new(Notify::new());
+    let finish = Arc::new(Semaphore::new(0));
+    let app = Router::new().route("/mcp/eclipse", post({
+        let entered = entered.clone();
+        let finish = finish.clone();
+        move |Json(request): Json<Value>| {
+            let entered = entered.clone();
+            let finish = finish.clone();
+            async move {
+                let result = match request["method"].as_str().unwrap_or("") {
+                    "initialize" => json!({"protocolVersion":"2025-03-26", "capabilities":{"tools":{}}, "serverInfo":{"name":"launch-mock","version":"1"}}),
+                    "notifications/initialized" => return StatusCode::ACCEPTED.into_response(),
+                    "tools/call" => {
+                        let args = &request["params"]["arguments"];
+                        if request["params"]["name"] != "run"
+                            || args["configuration"] != "FooTest"
+                            || args["waitForCompletion"] != json!(true)
+                        {
+                            return Json(json!({"jsonrpc":"2.0","id":request["id"],"result":{"content":[{"type":"text","text":"argument type mismatch"}],"isError":true}})).into_response();
+                        }
+                        entered.notify_one();
+                        let _permit = finish.acquire().await.unwrap();
+                        json!({"content":[{"type":"text","text":"Launch 'FooTest' completed"}]})
+                    }
+                    _ => json!({}),
+                };
+                Json(json!({"jsonrpc":"2.0","id":request["id"],"result":result})).into_response()
+            }
+        }
+    }));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+    let sandbox = Sandbox::new();
+    let child = sandbox
+        .command()
+        .args([
+            "run",
+            "--wait",
+            "--configuration",
+            "FooTest",
+            "--eclipse-url",
+            &url,
+            "--json",
+        ])
+        .spawn()
+        .unwrap();
+    let output = tokio::spawn(child.wait_with_output());
+    tokio::time::timeout(Duration::from_secs(10), entered.notified())
+        .await
+        .unwrap();
+    assert!(
+        !output.is_finished(),
+        "CLI returned before launch completion"
+    );
+    finish.add_permits(1);
+    let output = tokio::time::timeout(Duration::from_secs(10), output)
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{} {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(
+        result["result"]["content"][0]["text"],
+        "Launch 'FooTest' completed"
+    );
+    server.abort();
+}
+
+#[tokio::test]
 async fn local_nested_config_is_reloaded_without_restarting_daemon() {
     use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
     use serde_json::json;

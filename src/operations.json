@@ -1277,8 +1277,7 @@
       {
         "key": "waitForCompletion",
         "name": "wait",
-        "kind": "flag",
-        "wire": "string"
+        "kind": "flag"
       }
     ]
   },
@@ -1464,8 +1463,7 @@
       {
         "key": "waitForCompletion",
         "name": "wait",
-        "kind": "flag",
-        "wire": "string"
+        "kind": "flag"
       }
     ]
   },
@@ -1724,8 +1722,7 @@
       {
         "key": "waitForCompletion",
         "name": "wait",
-        "kind": "flag",
-        "wire": "string"
+        "kind": "flag"
       }
     ]
   },

@@ -93,3 +93,5 @@ Generated help and this inventory use the same registry in `src/operations.json`
 Former Python `refresh_file` and `refresh_workspace` wrapper handlers returned placeholder messages. Use `refresh workspace <paths...>` for actual Eclipse refresh. The `formatCode` and `problems` route aliases are replaced by `formatFile` and `getCompilationErrors`, matching the former client.
 
 CLI values are typed internally. The registry explicitly serializes legacy plugin number/boolean parameters as strings where its schemas require them, joins Maven goals with spaces, and joins file patterns with commas. `coverage report` has no project filter because the plugin accepts no arguments.
+
+Exception: `--wait` always sends a JSON boolean (`waitForCompletion`) for run, debug and coverage. Older plugin schemas advertise a string, but their Java methods require a Boolean and reject string values with `argument type mismatch`.

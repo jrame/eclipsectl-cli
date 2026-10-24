@@ -80,8 +80,15 @@ async fn plugin_schemas_cover_every_registered_operation() {
                             _ => "string",
                         }
                     };
+                    // Older plugins advertise a string for this Java Boolean parameter.
+                    // Reflection accepts only JSON booleans; the read-only launch test
+                    // below checks the actual invocation instead of trusting this schema.
+                    let legacy_wait_schema = arg.key == "waitForCompletion"
+                        && matches!(op.tool.as_str(), "run" | "runDebug" | "runCoverage")
+                        && expected == "boolean";
                     if let Some(actual) = property.get("type").and_then(|v| v.as_str())
                         && actual != expected
+                        && !(legacy_wait_schema && actual == "string")
                     {
                         problems.push(format!(
                             "{} / {}: registry type {expected}, plugin type {actual}, schema {:?}",
@@ -138,4 +145,23 @@ async fn live_read_only_smoke() {
         .await;
     assert!(response.ok, "{response:?}");
     pool.close().await;
+}
+
+#[tokio::test]
+#[ignore = "requires a running Eclipse plugin and credentials"]
+async fn launch_wait_is_accepted_when_listing_configurations() {
+    let config = config::load(&Settings::default(), &std::env::current_dir().unwrap()).unwrap();
+    let pool = Pool::default();
+    // No configuration means list only; this never starts a launch.
+    let matches = eclipsectl::cli::command()
+        .try_get_matches_from(["eclipsectl", "run", "--wait"])
+        .unwrap();
+    let (_, args) = eclipsectl::cli::selected(&matches);
+    let call = operations::find("run")
+        .unwrap()
+        .call(args, &std::env::current_dir().unwrap())
+        .unwrap();
+    let response = pool.call(&config, &call).await;
+    pool.close().await;
+    assert!(response.ok, "{response:?}");
 }

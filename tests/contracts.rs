@@ -277,6 +277,36 @@ async fn ipc_supports_large_fragmented_frames_and_rejects_oversized_lengths() {
 }
 
 #[test]
+fn launch_wait_preserves_boolean_wire_values_and_omission() {
+    for argv in [
+        vec!["eclipsectl", "run", "--configuration", "FooTest"],
+        vec!["eclipsectl", "debug", "run", "FooTest"],
+        vec!["eclipsectl", "coverage", "run", "FooTest"],
+    ] {
+        for (flag, expected) in [
+            (None, None),
+            (Some("--wait"), Some(json!(true))),
+            (Some("--wait=true"), Some(json!(true))),
+            (Some("--wait=false"), Some(json!(false))),
+        ] {
+            let mut args = argv.clone();
+            if let Some(flag) = flag {
+                // Exercise the reported order: run --wait --configuration FooTest.
+                let index = args.iter().position(|arg| *arg == "run").unwrap() + 1;
+                args.insert(index, flag);
+            }
+            let call = call(&args);
+            let wire = operations::find(&call.operation)
+                .unwrap()
+                .wire_arguments(&call.arguments)
+                .unwrap();
+            assert_eq!(call.arguments.get("waitForCompletion"), expected.as_ref());
+            assert_eq!(wire.get("waitForCompletion"), expected.as_ref());
+        }
+    }
+}
+
+#[test]
 fn wire_types_match_plugin_schemas_without_losing_typed_cli_values() {
     let breakpoint = call(&[
         "eclipsectl",
