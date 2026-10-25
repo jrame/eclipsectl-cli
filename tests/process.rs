@@ -71,6 +71,25 @@ async fn help_version_and_invalid_arguments_do_not_start_daemon() {
     assert!(output.status.success());
     assert!(String::from_utf8_lossy(&output.stdout).contains("eclipsectl"));
     assert!(!sandbox.dir.path().join("run").exists());
+    for args in [
+        vec!["workspace", "wait", "--help"],
+        vec!["build", "wait", "--help"],
+        vec!["debug", "wait", "--help"],
+    ] {
+        let output = sandbox.command().args(args).output().await.unwrap();
+        assert!(output.status.success());
+    }
+    for args in [
+        vec!["workspace", "wait", "--json"],
+        vec!["debug", "wait", "--json"],
+        vec!["build", "wait", "--timeout", "0", "--json"],
+    ] {
+        let output = sandbox.command().args(args).output().await.unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        let error: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(error["error"]["code"], "invalid_arguments");
+    }
+    assert!(!sandbox.dir.path().join("run").exists());
     let output = sandbox
         .command()
         .args(["debug", "variables", "--frame", "invalid", "--json"])
@@ -84,6 +103,181 @@ async fn help_version_and_invalid_arguments_do_not_start_daemon() {
         sandbox.json(&["daemon", "status"]).await["result"]["running"],
         false
     );
+    assert!(!sandbox.dir.path().join("run").exists());
+}
+
+#[tokio::test]
+async fn explicit_wait_binary_preserves_json_and_reports_deadlines() {
+    use axum::{
+        Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post,
+    };
+    use serde_json::json;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    async fn state_read(
+        State(count): State<Arc<AtomicUsize>>,
+        Json(request): Json<Value>,
+    ) -> axum::response::Response {
+        let id = request["id"].clone();
+        let result = match request["method"].as_str().unwrap_or("") {
+            "initialize" => {
+                json!({"protocolVersion":"2025-03-26","capabilities":{"tools":{}},"serverInfo":{"name":"wait-mock","version":"1"}})
+            }
+            "notifications/initialized" | "notifications/cancelled" => {
+                return StatusCode::ACCEPTED.into_response();
+            }
+            "tools/call" => {
+                assert_eq!(request["params"]["arguments"], json!({}));
+                let text = match request["params"]["name"].as_str() {
+                    Some("getDebugStatus") => {
+                        if count.fetch_add(1, Ordering::SeqCst) < 2 {
+                            "Debug status: running"
+                        } else {
+                            "Debug status: suspended\nSuspended at: Main.java:12"
+                        }
+                    }
+                    Some("getWorkspaceState") => "Workspace status: busy\nBuild status: busy",
+                    _ => panic!("unexpected tool"),
+                };
+                json!({"content":[{"type":"text","text":text}]})
+            }
+            _ => return StatusCode::ACCEPTED.into_response(),
+        };
+        Json(json!({"jsonrpc":"2.0","id":id,"result":result})).into_response()
+    }
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let count = Arc::new(AtomicUsize::new(0));
+    let app = Router::new()
+        .route("/mcp/{server}", post(state_read))
+        .with_state(count.clone());
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+    let sandbox = Sandbox::new();
+    // The explicit polling budget exceeds operation-timeout; each state read is quick.
+    let output = tokio::time::timeout(
+        Duration::from_secs(10),
+        sandbox
+            .command()
+            .args([
+                "debug",
+                "wait",
+                "--suspended",
+                "--timeout",
+                "4",
+                "--poll-interval",
+                "600",
+                "--operation-timeout",
+                "1",
+                "--eclipse-url",
+                &url,
+                "--json",
+            ])
+            .output(),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["ok"], true);
+    assert_eq!(
+        result["result"]["content"][0]["text"],
+        "Debug status: suspended\nSuspended at: Main.java:12"
+    );
+    assert_eq!(count.load(Ordering::SeqCst), 3);
+    let output = sandbox
+        .command()
+        .args([
+            "build",
+            "wait",
+            "--timeout",
+            "1",
+            "--eclipse-url",
+            &url,
+            "--json",
+        ])
+        .output()
+        .await
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["ok"], false);
+    assert_eq!(result["error"]["code"], "wait_timeout");
+    assert_eq!(
+        result["error"]["details"]["content"][0]["text"],
+        "Workspace status: busy\nBuild status: busy"
+    );
+    server.abort();
+}
+
+#[tokio::test]
+async fn java_refactoring_help_and_invalid_selections_do_not_start_daemon() {
+    let sandbox = Sandbox::new();
+    for command in [
+        "rename-method",
+        "rename-field",
+        "rename-variable",
+        "change-signature",
+        "extract-variable",
+        "extract-constant",
+        "inline-method",
+        "inline-variable",
+    ] {
+        let output = sandbox
+            .command()
+            .args(["refactor", command, "--help"])
+            .output()
+            .await
+            .unwrap();
+        assert!(output.status.success(), "{command}");
+        assert!(String::from_utf8_lossy(&output.stdout).contains("offset"));
+    }
+    for args in [
+        vec![
+            "refactor",
+            "extract-variable",
+            "Example.java",
+            "0",
+            "0",
+            "value",
+        ],
+        vec![
+            "refactor",
+            "change-signature",
+            "Example.java",
+            "0",
+            "--parameters",
+            "{}",
+        ],
+        vec![
+            "refactor",
+            "inline-method",
+            "Example.java",
+            "0",
+            "--delete-source",
+            "true",
+        ],
+    ] {
+        let output = sandbox
+            .command()
+            .args(args)
+            .arg("--json")
+            .output()
+            .await
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(response["error"]["code"], "invalid_arguments");
+    }
     assert!(!sandbox.dir.path().join("run").exists());
 }
 

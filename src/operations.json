@@ -1,5 +1,81 @@
 [
   {
+    "command": "debug processes",
+    "tool": "listProcesses",
+    "server": "eclipse-debug",
+    "description": "List active run, debug and coverage processes.",
+    "args": []
+  },
+  {
+    "command": "code format",
+    "tool": "formatCode",
+    "server": "eclipse-ide",
+    "description": "Format supplied Java code using Eclipse settings and return the formatted text.",
+    "args": [
+      {"key":"code", "name":"source", "kind":"string", "stdin":true, "help":"Java source to format; reads UTF-8 stdin when omitted"},
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project-specific formatter settings"}
+    ]
+  },
+  {
+    "command": "problems panel",
+    "tool": "problems",
+    "server": "eclipse",
+    "description": "Read Eclipse problem markers, optionally excluding unknown locations.",
+    "args": [
+      {"key":"severity", "name":"severity", "kind":"string", "choices":["error","warning","all"], "help":"Severity filter (plugin default: error)"},
+      {"key":"maxResults", "name":"max", "kind":"integer", "wire":"string", "max":2147483647, "help":"Maximum problems (default: 10; plugin caps at 500)"},
+      {"key":"skipUnknownLocation", "name":"skip-unknown-location", "kind":"boolean", "wire":"string", "help":"Skip markers without a valid file location or line (default: false)"}
+    ]
+  },
+  {
+    "command": "workspace wait",
+    "tool": "getWorkspaceState",
+    "server": "eclipse-ide",
+    "description": "Wait until Eclipse workspace jobs are idle for at least 500 ms.",
+    "wait_for": "workspace_idle",
+    "args": [
+      {"key":"idle", "name":"idle", "kind":"switch", "required":true, "local":true, "help":"Wait for workspace idle"},
+      {"key":"timeout", "name":"timeout", "kind":"integer", "min":1, "max":86400, "local":true, "help":"Polling deadline in seconds (default: operation-timeout, 1..86400)"},
+      {"key":"pollInterval", "name":"poll-interval", "kind":"integer", "min":50, "max":60000, "default":"250", "local":true, "help":"Polling interval in milliseconds (50..60000)"}
+    ]
+  },
+  {
+    "command": "build eclipse",
+    "tool": "buildProjects",
+    "server": "eclipse-ide",
+    "description": "Build saved Eclipse projects and wait for the problem report (omitted projects: all open projects).",
+    "args": [
+      {"key":"projectNames", "name":"project", "kind":"strings", "wire":"csv", "help":"Project name; repeat for multiple projects; commas and blank names are rejected"},
+      {"key":"buildKind", "name":"build-kind", "kind":"string", "choices":["incremental","full"], "help":"Eclipse build kind (plugin default: incremental)"},
+      {"key":"includeDependents", "name":"include-dependents", "kind":"boolean", "help":"Include transitive dependent projects (plugin default: true); dependencies are always built"},
+      {"key":"timeoutSeconds", "name":"timeout", "kind":"integer", "min":1, "max":3600, "help":"Plugin deadline including scheduling, in seconds (1..3600; plugin default: 120); client budget is at least this plus 10 seconds"},
+      {"key":"maxProblems", "name":"max-problems", "kind":"integer", "min":1, "max":500, "help":"Maximum problem details (1..500; plugin default: 100); totals remain complete"}
+    ]
+  },
+  {
+    "command": "build wait",
+    "tool": "getWorkspaceState",
+    "server": "eclipse-ide",
+    "description": "Wait until Eclipse auto/manual builds are idle for at least 500 ms.",
+    "wait_for": "build_idle",
+    "args": [
+      {"key":"timeout", "name":"timeout", "kind":"integer", "min":1, "max":86400, "local":true, "help":"Polling deadline in seconds (default: operation-timeout, 1..86400)"},
+      {"key":"pollInterval", "name":"poll-interval", "kind":"integer", "min":50, "max":60000, "default":"250", "local":true, "help":"Polling interval in milliseconds (50..60000)"}
+    ]
+  },
+  {
+    "command": "debug wait",
+    "tool": "getDebugStatus",
+    "server": "eclipse-debug",
+    "description": "Wait for the active debug session to suspend before inspecting frames or variables.",
+    "wait_for": "suspended",
+    "args": [
+      {"key":"suspended", "name":"suspended", "kind":"switch", "required":true, "local":true, "help":"Wait for a suspended debug session"},
+      {"key":"timeout", "name":"timeout", "kind":"integer", "min":1, "max":86400, "local":true, "help":"Polling deadline in seconds (default: operation-timeout, 1..86400)"},
+      {"key":"pollInterval", "name":"poll-interval", "kind":"integer", "min":50, "max":60000, "default":"250", "local":true, "help":"Polling interval in milliseconds (50..60000)"}
+    ]
+  },
+  {
     "command": "workspace info",
     "tool": "getWorkspaceInfo",
     "server": "eclipse-ide",
@@ -78,7 +154,8 @@
         "positional": true,
         "required": true,
         "path": true
-      }
+      },
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
   },
   {
@@ -152,7 +229,9 @@
         "kind": "string",
         "positional": true,
         "required": true
-      }
+      },
+      {"key":"methodSignature", "name":"signature", "kind":"string", "help":"Comma-separated JDT parameter type signatures to select an overload"},
+      {"key":"maxDepth", "name":"max-depth", "kind":"integer", "wire":"string", "max":2147483647, "help":"Hierarchy depth (default: 3; 0 also uses the default)"}
     ]
   },
   {
@@ -175,7 +254,9 @@
         "positional": true,
         "required": true,
         "wire": "space"
-      }
+      },
+      {"key":"profiles", "name":"profile", "kind":"strings", "wire":"csv", "help":"Maven profile; repeat to activate several profiles"},
+      {"key":"timeout", "name":"timeout", "kind":"integer", "wire":"string", "max":2147483647, "help":"Plugin Maven timeout (0: unlimited; advertised as seconds, currently implemented as minutes)"}
     ]
   },
   {
@@ -188,7 +269,9 @@
         "key": "projectName",
         "name": "project",
         "kind": "string"
-      }
+      },
+      {"key":"severity", "name":"severity", "kind":"string", "choices":["ERROR","WARNING","ALL"], "help":"Severity filter (plugin default: ALL)"},
+      {"key":"maxResults", "name":"max", "kind":"integer", "wire":"string", "max":2147483647, "help":"Maximum returned problems (plugin default: 100)"}
     ]
   },
   {
@@ -196,7 +279,10 @@
     "tool": "runAllTests",
     "server": "eclipse-ide",
     "description": "Run all tests in workspace.",
-    "args": []
+    "args": [
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"},
+      {"key":"timeout", "name":"timeout", "kind":"integer", "wire":"string", "max":2147483647, "help":"Plugin test wait in seconds (default: 60; 0 also uses the default)"}
+    ]
   },
   {
     "command": "test package",
@@ -217,7 +303,8 @@
         "kind": "string",
         "positional": true,
         "required": true
-      }
+      },
+      {"key":"timeout", "name":"timeout", "kind":"integer", "wire":"string", "max":2147483647, "help":"Plugin test wait in seconds (default: 60; 0 also uses the default)"}
     ]
   },
   {
@@ -239,7 +326,8 @@
         "kind": "string",
         "positional": true,
         "required": true
-      }
+      },
+      {"key":"timeout", "name":"timeout", "kind":"integer", "wire":"string", "max":2147483647, "help":"Plugin test wait in seconds (default: 60; 0 also uses the default)"}
     ]
   },
   {
@@ -268,7 +356,8 @@
         "kind": "string",
         "positional": true,
         "required": true
-      }
+      },
+      {"key":"timeout", "name":"timeout", "kind":"integer", "wire":"string", "max":2147483647, "help":"Plugin test wait in seconds (default: 60; 0 also uses the default)"}
     ]
   },
   {
@@ -330,7 +419,9 @@
         "key": "consoleName",
         "name": "name",
         "kind": "string"
-      }
+      },
+      {"key":"maxLines", "name":"max-lines", "kind":"integer", "wire":"string", "max":2147483647, "help":"Maximum recent lines (default: 100; 0 also uses the default)"},
+      {"key":"includeAllConsoles", "name":"include-all-consoles", "kind":"boolean", "wire":"string", "help":"Include all consoles (plugin default: false)"}
     ]
   },
   {
@@ -916,6 +1007,480 @@
     ]
   },
   {
+    "command": "refactor rename-method",
+    "tool": "refactorRenameMethod",
+    "server": "eclipse-refactor",
+    "description": "Rename a Java method and update its references.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "newName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor rename-field",
+    "tool": "refactorRenameField",
+    "server": "eclipse-refactor",
+    "description": "Rename a Java field and update its references.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "newName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor rename-variable",
+    "tool": "refactorRenameVariable",
+    "server": "eclipse-refactor",
+    "description": "Rename a local Java variable or parameter by name with --line/--method, or by offset.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "oldName",
+        "name": "old-name",
+        "kind": "string",
+        "positional": true,
+        "help": "Existing variable name with --line/--method; a numeric value retains legacy offset syntax"
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "max": 2147483647,
+        "help": "Zero-based UTF-16 offset; alternative to an old name with --line/--method"
+      },
+      {
+        "key": "lineNumber",
+        "name": "line",
+        "kind": "integer",
+        "min": 1,
+        "max": 2147483647,
+        "help": "1-based line containing a declaration or reference to the existing variable"
+      },
+      {
+        "key": "methodName",
+        "name": "method",
+        "kind": "string",
+        "help": "Enclosing method name; combine with --line to disambiguate overloads or scopes"
+      },
+      {
+        "key": "newName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor change-signature",
+    "tool": "refactorChangeSignature",
+    "server": "eclipse-refactor",
+    "description": "Change a Java method signature and update its callers.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "newName",
+        "name": "name",
+        "kind": "string"
+      },
+      {
+        "key": "returnType",
+        "name": "return-type",
+        "kind": "string"
+      },
+      {
+        "key": "visibility",
+        "name": "visibility",
+        "kind": "string",
+        "choices": [
+          "private",
+          "protected",
+          "public",
+          "package"
+        ]
+      },
+      {
+        "key": "parameters",
+        "name": "parameters",
+        "kind": "string",
+        "help": "JSON array in desired order: {\"oldIndex\":0,\"name\":\"value\",\"type\":\"int\"}; new parameters use oldIndex -1 and defaultValue; [] removes all parameters"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor extract-variable",
+    "tool": "refactorExtractVariable",
+    "server": "eclipse-refactor",
+    "description": "Extract a Java expression into a local variable.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "length",
+        "name": "length",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Selection length in UTF-16 code units (positive)"
+      },
+      {
+        "key": "variableName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "replaceAll",
+        "name": "replace-all",
+        "kind": "boolean",
+        "help": "Replace all matching occurrences (plugin default: false)"
+      },
+      {
+        "key": "declareFinal",
+        "name": "final",
+        "kind": "boolean",
+        "help": "Declare the extracted variable final (plugin default: false)"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor extract-constant",
+    "tool": "refactorExtractConstant",
+    "server": "eclipse-refactor",
+    "description": "Extract a Java expression into a static final constant.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "length",
+        "name": "length",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Selection length in UTF-16 code units (positive)"
+      },
+      {
+        "key": "constantName",
+        "name": "name",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "visibility",
+        "name": "visibility",
+        "kind": "string",
+        "choices": [
+          "private",
+          "protected",
+          "public",
+          "package"
+        ]
+      },
+      {
+        "key": "replaceAll",
+        "name": "replace-all",
+        "kind": "boolean",
+        "help": "Replace all matching occurrences (plugin default: false)"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor inline-method",
+    "tool": "refactorInlineMethod",
+    "server": "eclipse-refactor",
+    "description": "Inline a Java method declaration or invocation.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "inlineAll",
+        "name": "all",
+        "kind": "boolean",
+        "help": "Inline all invocations (default: true at declaration, false at invocation)"
+      },
+      {
+        "key": "deleteSource",
+        "name": "delete-source",
+        "kind": "boolean",
+        "help": "Delete the method declaration (requires all invocations; default: false)"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor inline-variable",
+    "tool": "refactorInlineVariable",
+    "server": "eclipse-refactor",
+    "description": "Inline a local Java variable using its initializer.",
+    "args": [
+      {
+        "key": "filePath",
+        "name": "file",
+        "kind": "string",
+        "positional": true,
+        "required": true,
+        "path": true,
+        "project_relative": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "positional": true,
+        "required": true,
+        "wire": "string",
+        "help": "Zero-based UTF-16 offset in the saved Java source"
+      },
+      {
+        "key": "projectName",
+        "name": "project",
+        "kind": "string"
+      },
+      {
+        "key": "preview",
+        "name": "preview",
+        "kind": "boolean",
+        "help": "Create a frozen preview and one-use ID (default: false, apply directly)"
+      }
+    ]
+  },
+  {
+    "command": "refactor get-preview",
+    "tool": "refactorGetPreview",
+    "server": "eclipse-refactor",
+    "description": "Read a frozen refactoring report; follow all page offsets in order before applying.",
+    "args": [
+      {
+        "key": "previewId",
+        "name": "preview-id",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      },
+      {
+        "key": "offset",
+        "name": "offset",
+        "kind": "integer",
+        "wire": "string",
+        "max": 2147483647,
+        "help": "Zero-based report character offset (default: 0); use the next offset returned by the preceding page"
+      }
+    ]
+  },
+  {
+    "command": "refactor apply-preview",
+    "tool": "refactorApplyPreview",
+    "server": "eclipse-refactor",
+    "description": "Apply a frozen preview once within 15 minutes, after reading all pages; refuses changed or unsaved sources.",
+    "args": [
+      {
+        "key": "previewId",
+        "name": "preview-id",
+        "kind": "string",
+        "positional": true,
+        "required": true
+      }
+    ]
+  },
+  {
     "command": "codegen getters-setters",
     "tool": "generateGettersSetters",
     "server": "eclipse-codegen",
@@ -1340,7 +1905,9 @@
         "key": "condition",
         "name": "condition",
         "kind": "string"
-      }
+      },
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"},
+      {"key":"hitCount", "name":"hit-count", "kind":"integer", "wire":"string", "min":1, "max":2147483647, "help":"Trigger after this many hits"}
     ]
   },
   {
@@ -1365,7 +1932,8 @@
         "positional": true,
         "required": true,
         "wire": "string"
-      }
+      },
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
   },
   {
@@ -1390,7 +1958,8 @@
         "positional": true,
         "required": true,
         "wire": "string"
-      }
+      },
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
   },
   {
@@ -1415,7 +1984,8 @@
         "positional": true,
         "required": true,
         "wire": "string"
-      }
+      },
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
   },
   {
@@ -1430,7 +2000,9 @@
     "tool": "listThreads",
     "server": "eclipse-debug",
     "description": "List all threads in the debug session.",
-    "args": []
+    "args": [
+      {"key":"sessionName", "name":"session", "kind":"string", "help":"Debug session name (default: focused or first active session)"}
+    ]
   },
   {
     "command": "debug thread-select",
@@ -1444,7 +2016,8 @@
         "kind": "string",
         "positional": true,
         "required": true
-      }
+      },
+      {"key":"sessionName", "name":"session", "kind":"string", "help":"Debug session name (default: focused or first active session)"}
     ]
   },
   {
@@ -1668,7 +2241,9 @@
         "name": "max-depth",
         "kind": "integer",
         "wire": "string"
-      }
+      },
+      {"key":"packageFilter", "name":"package-filter", "kind":"string", "help":"Only include matching packages"},
+      {"key":"skipFramework", "name":"skip-framework", "kind":"boolean", "wire":"string", "help":"Skip framework frames (plugin default: true)"}
     ]
   },
   {

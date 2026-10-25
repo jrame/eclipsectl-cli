@@ -60,7 +60,7 @@ async fn plugin_schemas_cover_every_registered_operation() {
                 .input_schema
                 .get("properties")
                 .and_then(|v| v.as_object());
-            for arg in &op.args {
+            for arg in op.args.iter().filter(|arg| !arg.local) {
                 if !properties.is_some_and(|props| props.contains_key(&arg.key)) {
                     problems.push(format!(
                         "{}: unknown wire argument {}; plugin schema: {:?}",

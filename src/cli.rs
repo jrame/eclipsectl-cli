@@ -5,6 +5,11 @@ use crate::{
 use clap::{Arg, ArgAction, ArgMatches, Command, builder::PossibleValuesParser};
 
 fn add_args(mut cmd: Command, op: &Operation) -> Command {
+    if op.command == "refactor rename-variable" {
+        cmd = cmd.allow_missing_positional(true).after_help(
+            "Examples:\n  eclipsectl refactor rename-variable FooTest str strSuper --line 8\n  eclipsectl refactor rename-variable FooTest str strSuper --method testFoo\n  eclipsectl refactor rename-variable FooTest str strSuper --method testFoo --line 8\n  eclipsectl refactor rename-variable src/FooTest.java strSuper --offset 180\nLegacy syntax: eclipsectl refactor rename-variable src/FooTest.java 180 strSuper",
+        );
+    }
     for spec in &op.args {
         let mut arg =
             Arg::new(spec.name.clone())
@@ -16,6 +21,10 @@ fn add_args(mut cmd: Command, op: &Operation) -> Command {
                 });
         if !spec.positional {
             arg = arg.long(spec.name.clone());
+        }
+        if spec.kind == "switch" {
+            cmd = cmd.arg(arg.action(ArgAction::SetTrue));
+            continue;
         }
         arg = arg.value_parser(clap::builder::StringValueParser::new());
         if matches!(spec.kind.as_str(), "strings" | "csv" | "env") {
@@ -34,9 +43,15 @@ fn add_args(mut cmd: Command, op: &Operation) -> Command {
             arg = arg.value_parser(PossibleValuesParser::new(["true", "false"]));
         } else if spec.kind == "integer" {
             use clap::builder::TypedValueParser;
-            arg = arg.value_parser(clap::builder::StringValueParser::new().try_map(|s| {
-                s.parse::<u64>()
+            let min = spec.min.unwrap_or(0);
+            let max = spec.max.unwrap_or(u64::MAX);
+            arg = arg.value_parser(clap::builder::StringValueParser::new().try_map(move |s| {
+                let number = s
+                    .parse::<u64>()
                     .map_err(|_| "Expected a nonnegative integer")?;
+                if number < min || number > max {
+                    return Err("Integer is outside the allowed range");
+                }
                 Ok::<_, &'static str>(s)
             }));
         } else if !spec.choices.is_empty() {

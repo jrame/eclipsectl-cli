@@ -5,3 +5,4 @@ pub mod ipc;
 pub mod mcp;
 pub mod operations;
 pub mod paths;
+pub mod wait;

@@ -14,7 +14,7 @@ use eclipsectl::{
 };
 use serde_json::{Value, json};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet, VecDeque},
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -29,6 +29,7 @@ struct StateData {
     calls: Mutex<Vec<(String, String, Value)>>,
     delay: Mutex<Duration>,
     read_files: Mutex<HashSet<String>>,
+    replies: Mutex<HashMap<String, VecDeque<Value>>>,
 }
 
 struct Mock {
@@ -106,6 +107,14 @@ async fn handler(
             }
             let delay = *state.delay.lock().await;
             tokio::time::sleep(delay).await;
+            if let Some(replies) = state.replies.lock().await.get_mut(&tool) {
+                let result = if replies.len() > 1 {
+                    replies.pop_front().unwrap()
+                } else {
+                    replies.front().unwrap().clone()
+                };
+                return Json(json!({"jsonrpc":"2.0","id":id,"result":result})).into_response();
+            }
             match args.get("containingText").and_then(Value::as_str) {
                 Some("expire") => return StatusCode::NOT_FOUND.into_response(),
                 Some("error") => {
@@ -143,6 +152,97 @@ fn call(operation: &str, args: Value) -> Call {
 }
 fn search(text: &str) -> Call {
     call("search text", json!({"containingText":text}))
+}
+
+#[tokio::test]
+async fn java_refactorings_route_typed_arguments_through_the_mcp_session() {
+    let mock = Mock::start().await;
+    let pool = Pool::default();
+    for (command, tool, arguments, wire) in [
+        (
+            "rename-method",
+            "refactorRenameMethod",
+            json!({"newName":"calculate"}),
+            json!({"newName":"calculate"}),
+        ),
+        (
+            "rename-field",
+            "refactorRenameField",
+            json!({"newName":"total"}),
+            json!({"newName":"total"}),
+        ),
+        (
+            "rename-variable",
+            "refactorRenameVariable",
+            json!({"newName":"amount"}),
+            json!({"newName":"amount"}),
+        ),
+        (
+            "change-signature",
+            "refactorChangeSignature",
+            json!({"parameters":"[]"}),
+            json!({"parameters":"[]"}),
+        ),
+        (
+            "extract-variable",
+            "refactorExtractVariable",
+            json!({"length":5,"variableName":"subtotal","replaceAll":false,"declareFinal":true}),
+            json!({"length":"5","variableName":"subtotal","replaceAll":false,"declareFinal":true}),
+        ),
+        (
+            "extract-constant",
+            "refactorExtractConstant",
+            json!({"length":2,"constantName":"LIMIT","visibility":"private"}),
+            json!({"length":"2","constantName":"LIMIT","visibility":"private"}),
+        ),
+        (
+            "inline-method",
+            "refactorInlineMethod",
+            json!({"inlineAll":true,"deleteSource":false}),
+            json!({"inlineAll":true,"deleteSource":false}),
+        ),
+        (
+            "inline-variable",
+            "refactorInlineVariable",
+            json!({}),
+            json!({}),
+        ),
+    ] {
+        let mut arguments = arguments.as_object().unwrap().clone();
+        arguments.extend(
+            json!({"filePath":"src/é Example.java","projectName":"disposable","offset":120})
+                .as_object()
+                .unwrap()
+                .clone(),
+        );
+        let response = pool
+            .call(
+                &mock.config,
+                &Call {
+                    operation: format!("refactor {command}"),
+                    arguments,
+                },
+            )
+            .await;
+        assert!(response.ok, "{command}: {response:?}");
+        let mut expected = wire.as_object().unwrap().clone();
+        expected.extend(
+            json!({"filePath":"src/é Example.java","projectName":"disposable","offset":"120"})
+                .as_object()
+                .unwrap()
+                .clone(),
+        );
+        if command == "rename-variable" {
+            expected.insert("offset".into(), json!(120));
+        }
+        let calls = mock.state.calls.lock().await;
+        let (server, actual_tool, actual_arguments) = calls.last().unwrap();
+        assert_eq!(server, "eclipse-refactor");
+        assert_eq!(actual_tool, tool);
+        assert_eq!(actual_arguments, &Value::Object(expected));
+    }
+    assert_eq!(mock.state.initialize.load(Ordering::SeqCst), 1);
+    pool.close().await;
 }
 
 #[tokio::test]
@@ -422,4 +522,235 @@ async fn operation_can_run_longer_than_legacy_five_second_ipc_limit() {
         .await
         .unwrap();
     task.await.unwrap();
+}
+
+fn state_result(text: &str) -> Value {
+    json!({"content":[{"type":"text","text":text}], "_meta":{"preserved":true}})
+}
+
+#[tokio::test]
+async fn debug_wait_polls_in_one_session_and_preserves_the_complete_result() {
+    let mock = Mock::start().await;
+    let final_result = state_result("Debug status: suspended\nSuspended at: Main.java:12");
+    mock.state.replies.lock().await.insert(
+        "getDebugStatus".into(),
+        VecDeque::from([
+            state_result("Debug status: none"),
+            state_result("Debug status: running\nSession: suspended"),
+            final_result.clone(),
+        ]),
+    );
+    let pool = Pool::default();
+    let response = pool
+        .call(
+            &mock.config,
+            &call(
+                "debug wait",
+                json!({"suspended":true,"timeout":2,"pollInterval":50}),
+            ),
+        )
+        .await;
+    assert!(response.ok, "{response:?}");
+    assert_eq!(response.result.unwrap(), final_result);
+    let calls = mock.state.calls.lock().await;
+    assert_eq!(calls.len(), 3);
+    assert!(
+        calls
+            .iter()
+            .all(|(server, tool, args)| server == "eclipse-debug"
+                && tool == "getDebugStatus"
+                && args == &json!({}))
+    );
+    assert_eq!(mock.state.initialize.load(Ordering::SeqCst), 1);
+    drop(calls);
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn wait_prefers_structured_state_and_keeps_per_read_timeouts() {
+    let mock = Mock::start().await;
+    let result = json!({"content":[{"type":"text","text":"Debug status: running"}],"structuredContent":{"state":"suspended"}});
+    mock.state
+        .replies
+        .lock()
+        .await
+        .insert("getDebugStatus".into(), VecDeque::from([result.clone()]));
+    let pool = Pool::default();
+    let wait = call("debug wait", json!({"suspended":true,"timeout":5}));
+    let response = pool.call(&mock.config, &wait).await;
+    assert_eq!(response.result.unwrap(), result);
+    *mock.state.delay.lock().await = Duration::from_secs(3);
+    let mut config = mock.config.clone();
+    config.operation_timeout = 1;
+    let start = Instant::now();
+    let response = pool.call(&config, &wait).await;
+    assert_eq!(response.error.unwrap().code, "operation_timeout");
+    assert!(start.elapsed() < Duration::from_millis(2500));
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn workspace_wait_requires_continuous_quiet_and_build_wait_ignores_other_jobs() {
+    let mock = Mock::start().await;
+    mock.state.replies.lock().await.insert(
+        "getWorkspaceState".into(),
+        VecDeque::from([
+            state_result("Workspace status: busy\nBuild status: busy"),
+            state_result("Workspace status: idle\nBuild status: idle"),
+            state_result("Workspace status: busy\nBuild status: busy"),
+            state_result("Workspace status: idle\nBuild status: idle"),
+        ]),
+    );
+    let pool = Pool::default();
+    let start = Instant::now();
+    let response = pool
+        .call(
+            &mock.config,
+            &call(
+                "workspace wait",
+                json!({"idle":true,"timeout":3,"pollInterval":100}),
+            ),
+        )
+        .await;
+    assert!(response.ok, "{response:?}");
+    assert!(start.elapsed() >= Duration::from_millis(800));
+    mock.state.replies.lock().await.insert(
+        "getWorkspaceState".into(),
+        VecDeque::from([state_result("Workspace status: busy\nBuild status: idle")]),
+    );
+    let response = pool
+        .call(
+            &mock.config,
+            &call("build wait", json!({"timeout":2,"pollInterval":50})),
+        )
+        .await;
+    assert!(response.ok, "{response:?}");
+    assert!(
+        mock.state
+            .calls
+            .lock()
+            .await
+            .iter()
+            .all(|(server, tool, args)| server == "eclipse-ide"
+                && tool == "getWorkspaceState"
+                && args == &json!({}))
+    );
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn wait_timeout_bounds_pending_states_and_slow_mcp_reads() {
+    let mock = Mock::start().await;
+    mock.state.replies.lock().await.insert(
+        "getDebugStatus".into(),
+        VecDeque::from([state_result("Debug status: running")]),
+    );
+    let pool = Pool::default();
+    let wait = call(
+        "debug wait",
+        json!({"suspended":true,"timeout":1,"pollInterval":50}),
+    );
+    let response = pool.call(&mock.config, &wait).await;
+    assert_eq!(response.error.as_ref().unwrap().code, "wait_timeout");
+    assert_eq!(
+        response.error.unwrap().details.unwrap()["content"][0]["text"],
+        "Debug status: running"
+    );
+    let count = mock.state.calls.lock().await.len();
+    *mock.state.delay.lock().await = Duration::from_secs(3);
+    let start = Instant::now();
+    let response = pool.call(&mock.config, &wait).await;
+    assert_eq!(response.error.unwrap().code, "wait_timeout");
+    assert!(start.elapsed() < Duration::from_millis(2500));
+    assert_eq!(mock.state.calls.lock().await.len(), count + 1);
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn wait_returns_tool_errors_and_unknown_states_without_retrying() {
+    let mock = Mock::start().await;
+    let pool = Pool::default();
+    for (result, expected) in [
+        (
+            json!({"content":[{"type":"text","text":"not available"}],"isError":true}),
+            "mcp_tool_error",
+        ),
+        (
+            state_result("Session: suspended\nUnsupported debug format"),
+            "wait_state_unavailable",
+        ),
+        (
+            state_result("Debug status: terminated"),
+            "wait_state_unavailable",
+        ),
+    ] {
+        mock.state
+            .replies
+            .lock()
+            .await
+            .insert("getDebugStatus".into(), VecDeque::from([result]));
+        let count = mock.state.calls.lock().await.len();
+        let response = pool
+            .call(&mock.config, &call("debug wait", json!({"suspended":true})))
+            .await;
+        assert_eq!(response.error.unwrap().code, expected);
+        assert_eq!(mock.state.calls.lock().await.len(), count + 1);
+    }
+    mock.state.replies.lock().await.insert(
+        "getWorkspaceState".into(),
+        VecDeque::from([state_result("# Workspace Information")]),
+    );
+    let response = pool
+        .call(&mock.config, &call("build wait", json!({})))
+        .await;
+    assert_eq!(response.error.unwrap().code, "wait_state_unavailable");
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn debug_wait_keeps_the_session_locked_until_suspension() {
+    let mock = Mock::start().await;
+    *mock.state.delay.lock().await = Duration::from_millis(100);
+    mock.state.replies.lock().await.insert(
+        "getDebugStatus".into(),
+        VecDeque::from([
+            state_result("Debug status: running"),
+            state_result("Debug status: suspended"),
+        ]),
+    );
+    let pool = Arc::new(Pool::default());
+    let waiting = {
+        let pool = pool.clone();
+        let config = mock.config.clone();
+        tokio::spawn(async move {
+            pool.call(
+                &config,
+                &call("debug wait", json!({"suspended":true,"pollInterval":50})),
+            )
+            .await
+        })
+    };
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while mock.state.calls.lock().await.is_empty() {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let variables = pool
+        .call(&mock.config, &call("debug variables", json!({})))
+        .await;
+    assert!(waiting.await.unwrap().ok);
+    assert!(variables.ok);
+    assert_eq!(
+        mock.state
+            .calls
+            .lock()
+            .await
+            .iter()
+            .map(|(_, tool, _)| tool.as_str())
+            .collect::<Vec<_>>(),
+        ["getDebugStatus", "getDebugStatus", "getVariables"]
+    );
+    pool.close().await;
 }

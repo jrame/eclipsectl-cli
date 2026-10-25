@@ -80,7 +80,7 @@ eclipsectl debug run 'Main dev' --wait
 eclipsectl daemon status
 ```
 
-All **83 command bindings / 82 distinct MCP tools / 7 endpoints** are listed in [the command inventory](docs/COMMANDS.md). Use `eclipsectl <family> <command> --help` for details. See [CLI_USAGE.md](CLI_USAGE.md), [DAEMON.md](DAEMON.md), and [the real Eclipse smoke test procedure](docs/VALIDATION.md).
+All **94 command bindings / 91 distinct MCP tools / 7 endpoints** are listed in [the command inventory](docs/COMMANDS.md). Use `eclipsectl <family> <command> --help` for details. See [CLI_USAGE.md](CLI_USAGE.md), [DAEMON.md](DAEMON.md), and [the real Eclipse smoke test procedure](docs/VALIDATION.md).
 
 Human output contains Eclipse text. `--json` preserves the complete MCP result, including non-text content and `structuredContent`:
 

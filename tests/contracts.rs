@@ -22,14 +22,14 @@ fn call(argv: &[&str]) -> operations::Call {
 fn inventory_and_help_are_complete_and_unambiguous() {
     cli::command().debug_assert();
     let inventory = operations::inventory();
-    assert_eq!(inventory.len(), 83);
+    assert_eq!(inventory.len(), 100);
     assert_eq!(
         inventory
             .iter()
             .map(|op| &op.tool)
             .collect::<HashSet<_>>()
             .len(),
-        82
+        97
     );
     assert_eq!(
         inventory
@@ -37,7 +37,7 @@ fn inventory_and_help_are_complete_and_unambiguous() {
             .map(|op| &op.command)
             .collect::<HashSet<_>>()
             .len(),
-        83
+        100
     );
     assert!(inventory.iter().all(|op| !op.server.is_empty()));
     assert!(include_str!("../docs/COMMANDS.md").contains("eclipsectl launch create-java"));

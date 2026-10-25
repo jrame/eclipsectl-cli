@@ -108,15 +108,65 @@ impl Pool {
                 );
             }
         };
-        let params = CallToolRequestParams::new(op.tool.clone()).with_arguments(arguments);
+        let outcome = if let Some(condition) = op.wait_for {
+            crate::wait::until(
+                condition,
+                std::time::Duration::from_secs(
+                    call.arguments
+                        .get("timeout")
+                        .and_then(Value::as_u64)
+                        .unwrap_or(config.operation_timeout),
+                ),
+                std::time::Duration::from_millis(
+                    call.arguments
+                        .get("pollInterval")
+                        .and_then(Value::as_u64)
+                        .unwrap_or(250),
+                ),
+                || Self::invoke(session.as_ref().expect("connected"), config, op, &arguments),
+            )
+            .await
+        } else {
+            Self::invoke(session.as_ref().expect("connected"), config, op, &arguments).await
+        };
+        if outcome.error.as_ref().is_some_and(|error| {
+            matches!(
+                error.code.as_str(),
+                "mcp_failed" | "operation_timeout" | "wait_timeout"
+            )
+        }) && let Some(old) = session.take()
+        {
+            let _ = tokio::time::timeout(std::time::Duration::from_secs(2), old.cancel()).await;
+        }
+        outcome
+    }
+
+    async fn invoke(
+        session: &Session,
+        config: &Config,
+        op: &crate::operations::Operation,
+        arguments: &serde_json::Map<String, Value>,
+    ) -> Response {
+        let params = CallToolRequestParams::new(op.tool.clone()).with_arguments(arguments.clone());
         // call_tool_once deliberately avoids automatic input-required retries.
-        let outcome = tokio::time::timeout(
-            config.operation_duration(),
-            session.as_ref().expect("connected").call_tool_once(params),
+        let outcome = match tokio::time::timeout(
+            std::time::Duration::from_secs(
+                op.operation_timeout(arguments, config.operation_timeout),
+            ),
+            session.call_tool_once(params),
         )
-        .await;
+        .await
+        {
+            Ok(outcome) => outcome,
+            Err(_) => {
+                return Response::error(
+                    "operation_timeout",
+                    "MCP operation timed out; execution may have occurred and was not retried",
+                );
+            }
+        };
         match outcome {
-            Ok(Ok(CallToolResponse::Complete(result))) => {
+            Ok(CallToolResponse::Complete(result)) => {
                 let value = match serde_json::to_value(result) {
                     Ok(v) => v,
                     Err(_) => {
@@ -135,7 +185,7 @@ impl Pool {
                     Response::success(value)
                 }
             }
-            Ok(Ok(other)) => {
+            Ok(other) => {
                 let mut response = Response::error(
                     "unsupported_mcp_result",
                     "Eclipse requested additional input or an asynchronous task; this CLI does not replay the call",
@@ -147,31 +197,14 @@ impl Pool {
                 };
                 response
             }
-            Ok(Err(e)) => {
-                if let Some(old) = session.take() {
-                    let _ =
-                        tokio::time::timeout(std::time::Duration::from_secs(2), old.cancel()).await;
-                }
-                Response::error(
-                    "mcp_failed",
-                    config.redact(format!(
-                        "MCP call failed; execution may have occurred and was not retried: {e}"
-                    )),
-                )
-            }
-            Err(_) => {
-                if let Some(old) = session.take() {
-                    let _ =
-                        tokio::time::timeout(std::time::Duration::from_secs(2), old.cancel()).await;
-                }
-                Response::error(
-                    "operation_timeout",
-                    "MCP operation timed out; execution may have occurred and was not retried",
-                )
-            }
+            Err(e) => Response::error(
+                "mcp_failed",
+                config.redact(format!(
+                    "MCP call failed; execution may have occurred and was not retried: {e}"
+                )),
+            ),
         }
     }
-
     pub async fn doctor(&self, config: &Config) -> Response {
         if let Err(e) = config.validate() {
             return Response::error("invalid_config", e.to_string());

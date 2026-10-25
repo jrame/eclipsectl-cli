@@ -98,7 +98,7 @@ async fn execute(matches: &clap::ArgMatches) -> Result<Response> {
         _ => {
             let cwd = std::env::current_dir()?;
             let config = config::load(&cli::overrides(matches), &cwd)?;
-            let timeout =
+            let mut timeout =
                 Duration::from_secs(config.connect_timeout + config.operation_timeout * 2 + 10);
             if name == "doctor" {
                 daemon::request(Action::Doctor { config }, timeout).await
@@ -109,6 +109,25 @@ async fn execute(matches: &clap::ArgMatches) -> Result<Response> {
                         return Ok(Response::error("invalid_arguments", error.to_string()));
                     }
                 };
+                timeout += Duration::from_secs(
+                    operations::find(&name)?
+                        .operation_timeout(&call.arguments, config.operation_timeout)
+                        - config.operation_timeout,
+                );
+                if operations::find(&name)?.wait_for.is_some() {
+                    // Queueing and connecting have separate budgets; polling may override
+                    // operation_timeout. Leave room for bounded session cancellation.
+                    timeout = Duration::from_secs(
+                        config.connect_timeout
+                            + config.operation_timeout
+                            + call
+                                .arguments
+                                .get("timeout")
+                                .and_then(Value::as_u64)
+                                .unwrap_or(config.operation_timeout)
+                            + 10,
+                    );
+                }
                 daemon::request(Action::Call { config, call }, timeout).await
             }
         }

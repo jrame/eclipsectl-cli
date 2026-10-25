@@ -1,5 +1,51 @@
 # Validation results — 2026-10-16
 
+## Variable rename by line and method — 2026-10-25 (Windows)
+
+`refactor rename-variable` now accepts an old/new name pair with `--line`
+(1-based), `--method`, or both, plus an explicit `--offset` alternative. The
+legacy positional offset form is preserved. The matching plugin changes are in
+`B:\dev\eclipse-workspace2\eclipsectl-mcp-plugin`; named target resolution uses
+JDT bindings under the existing workspace lock and frozen-preview lifecycle.
+
+Formatting, Clippy with warnings denied and the release build passed. The Rust
+suites passed, including selector validation, legacy syntax, numeric
+wire values and mocked MCP routing. The plugin's targeted Maven/Tycho verification
+passed **32 PDE tests**, including real variable/parameter renames, CRLF/UTF-16,
+repeated references, overloaded methods, separate scopes, comments/strings,
+duplicate source files, preview/apply and HTTP schema/error checks. Catalogue
+generation and generator fixtures passed. Tests use disposable projects in an
+isolated Eclipse workbench; the plugin has not been installed in the user's
+running Eclipse, and Linux/WSL was not tested for this change.
+
+## Additional Java refactorings — 2026-10-25 (Windows)
+
+Eight CLI operations and their matching tools were added in the sibling plugin:
+rename method/field/local variable, change signature, extract variable/constant,
+and inline method/local variable.
+
+Formatting, Clippy with warnings denied, the full Rust test suite and the release
+build passed. The subsequently added process test for refactoring help/invalid
+arguments also passed independently. Contracts cover all eight wire mappings,
+positions, optional booleans, signature JSON and invalid requests. Mock transport
+tests verify routing and reuse of the refactoring MCP session.
+
+The plugin's targeted Maven/Tycho build passed **15 PDE tests** in an isolated
+Eclipse workbench and disposable Java projects. These exercise real JDT changes,
+cross-file callers, overloads, shadowed variables, parameter reorder/add/remove,
+return type changes, expression extraction, inline operations and rejection of
+invalid selections or unsaved caller buffers. The generated tool catalogue and
+its generator fixtures also passed validation.
+
+Plugin command (from its repository):
+
+```powershell
+.\mvnw.cmd -o -B -pl plugins/plugin.eclipsectl.mcp.dependencies,plugins/plugin.eclipsectl.mcp.main,tests/plugin.eclipsectl.mcp.main.tests -am verify '-Dtest=JavaRefactoringServiceTest' '-DfailIfNoTests=false'
+```
+
+The plugin was not installed in the user's Eclipse. CLI HTTP calls to an installed
+updated plugin and Linux/WSL validation were not run for this change.
+
 ## Completed
 
 | Check | Native Windows | Ubuntu WSL |
