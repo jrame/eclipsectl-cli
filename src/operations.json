@@ -24,7 +24,7 @@
     "args": [
       {"key":"severity", "name":"severity", "kind":"string", "choices":["error","warning","all"], "help":"Severity filter (plugin default: error)"},
       {"key":"maxResults", "name":"max", "kind":"integer", "wire":"string", "max":2147483647, "help":"Maximum problems (default: 10; plugin caps at 500)"},
-      {"key":"skipUnknownLocation", "name":"skip-unknown-location", "kind":"boolean", "wire":"string", "help":"Skip markers without a valid file location or line (default: false)"}
+      {"key":"skipUnknownLocation", "name":"skip-unknown-location", "kind":"boolean", "help":"Skip markers without a valid file location or line (default: false)"}
     ]
   },
   {
@@ -142,6 +142,19 @@
     ]
   },
   {
+    "command": "project create",
+    "tool": "createJavaProject",
+    "server": "eclipse-ide",
+    "description": "Create and open a new Eclipse Java project (requires --java).",
+    "args": [
+      {"key":"projectPath", "name":"path", "kind":"string", "positional":true, "required":true, "path":true, "help":"New directory; parent must exist; existing targets are never overwritten"},
+      {"key":"java", "name":"java", "kind":"switch", "required":true, "local":true, "help":"Create a Java project using Eclipse JDT"},
+      {"key":"projectName", "name":"project", "kind":"string", "help":"Project name (default: directory name)"},
+      {"key":"javaVersion", "name":"java-version", "kind":"integer", "min":8, "max":2147483647, "help":"Java feature version with a compatible installed JRE (default: Eclipse default JRE version); no JDK download"},
+      {"key":"junitVersion", "name":"junit", "kind":"string", "choices":["5"], "help":"Add Eclipse JUnit 5, test sources and separate bin-test output (default: none)"}
+    ]
+  },
+  {
     "command": "project import",
     "tool": "importProject",
     "server": "eclipse-ide",
@@ -231,7 +244,7 @@
         "required": true
       },
       {"key":"methodSignature", "name":"signature", "kind":"string", "help":"Comma-separated JDT parameter type signatures to select an overload"},
-      {"key":"maxDepth", "name":"max-depth", "kind":"integer", "wire":"string", "max":2147483647, "help":"Hierarchy depth (default: 3; 0 also uses the default)"}
+      {"key":"maxDepth", "name":"max-depth", "kind":"integer", "max":2147483647, "help":"Hierarchy depth (default: 3; 0 also uses the default)"}
     ]
   },
   {
@@ -270,8 +283,8 @@
         "name": "project",
         "kind": "string"
       },
-      {"key":"severity", "name":"severity", "kind":"string", "choices":["ERROR","WARNING","ALL"], "help":"Severity filter (plugin default: ALL)"},
-      {"key":"maxResults", "name":"max", "kind":"integer", "wire":"string", "max":2147483647, "help":"Maximum returned problems (plugin default: 100)"}
+      {"key":"severity", "name":"severity", "kind":"string", "choices":["ERROR","WARNING","ALL"], "ignore_case":true, "help":"Severity filter, case-insensitive (plugin default: ALL)"},
+      {"key":"maxResults", "name":"max", "kind":"integer", "max":2147483647, "help":"Maximum returned problems (plugin default: 50)"}
     ]
   },
   {
@@ -399,8 +412,7 @@
       {
         "key": "lineNumber",
         "name": "line",
-        "kind": "integer",
-        "wire": "string"
+        "kind": "integer", "max": 2147483647
       },
       {
         "key": "projectName",
@@ -421,7 +433,7 @@
         "kind": "string"
       },
       {"key":"maxLines", "name":"max-lines", "kind":"integer", "wire":"string", "max":2147483647, "help":"Maximum recent lines (default: 100; 0 also uses the default)"},
-      {"key":"includeAllConsoles", "name":"include-all-consoles", "kind":"boolean", "wire":"string", "help":"Include all consoles (plugin default: false)"}
+      {"key":"includeAllConsoles", "name":"include-all-consoles", "kind":"boolean", "help":"Include all consoles (plugin default: false)"}
     ]
   },
   {
@@ -562,8 +574,7 @@
       {
         "key": "includeSubtypes",
         "name": "include-subtypes",
-        "kind": "flag",
-        "wire": "string"
+        "kind": "flag"
       }
     ]
   },
@@ -640,6 +651,7 @@
         "name": "severity",
         "kind": "string",
         "default": "ERROR",
+        "ignore_case": true,
         "choices": [
           "ERROR",
           "WARNING",
@@ -651,7 +663,7 @@
         "name": "max",
         "kind": "integer",
         "default": "10",
-        "wire": "string"
+        "max": 2147483647
       },
       {
         "key": "projectName",
@@ -710,18 +722,16 @@
       {
         "key": "lineNumber",
         "name": "line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {
         "key": "fixIndex",
         "name": "index",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {
         "key": "projectName",
@@ -967,18 +977,16 @@
       {
         "key": "startLine",
         "name": "start-line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {
         "key": "endLine",
         "name": "end-line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {
         "key": "methodName",
@@ -1024,10 +1032,9 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
@@ -1068,10 +1075,9 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
@@ -1175,10 +1181,9 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
@@ -1239,19 +1244,17 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
         "key": "length",
         "name": "length",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Selection length in UTF-16 code units (positive)"
       },
       {
@@ -1304,19 +1307,17 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
         "key": "length",
         "name": "length",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Selection length in UTF-16 code units (positive)"
       },
       {
@@ -1374,10 +1375,9 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
@@ -1423,10 +1423,9 @@
       {
         "key": "offset",
         "name": "offset",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
         "required": true,
-        "wire": "string",
         "help": "Zero-based UTF-16 offset in the saved Java source"
       },
       {
@@ -1459,7 +1458,6 @@
         "key": "offset",
         "name": "offset",
         "kind": "integer",
-        "wire": "string",
         "max": 2147483647,
         "help": "Zero-based report character offset (default: 0); use the next offset returned by the preceding page"
       }
@@ -1514,15 +1512,13 @@
         "key": "generateGetters",
         "name": "getters",
         "kind": "boolean",
-        "default": "true",
-        "wire": "string"
+        "default": "true"
       },
       {
         "key": "generateSetters",
         "name": "setters",
         "kind": "boolean",
-        "default": "true",
-        "wire": "string"
+        "default": "true"
       },
       {
         "key": "insertionPoint",
@@ -1566,22 +1562,19 @@
         "key": "generateToString",
         "name": "tostring",
         "kind": "boolean",
-        "default": "true",
-        "wire": "string"
+        "default": "true"
       },
       {
         "key": "generateEquals",
         "name": "equals",
         "kind": "boolean",
-        "default": "true",
-        "wire": "string"
+        "default": "true"
       },
       {
         "key": "generateHashCode",
         "name": "hashcode",
         "kind": "boolean",
-        "default": "true",
-        "wire": "string"
+        "default": "true"
       }
     ]
   },
@@ -1896,10 +1889,9 @@
       {
         "key": "lineNumber",
         "name": "line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {
         "key": "condition",
@@ -1907,7 +1899,7 @@
         "kind": "string"
       },
       {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"},
-      {"key":"hitCount", "name":"hit-count", "kind":"integer", "wire":"string", "min":1, "max":2147483647, "help":"Trigger after this many hits"}
+      {"key":"hitCount", "name":"hit-count", "kind":"integer", "min":1, "max":2147483647, "help":"Trigger after this many hits"}
     ]
   },
   {
@@ -1928,10 +1920,9 @@
       {
         "key": "lineNumber",
         "name": "line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
@@ -1954,10 +1945,9 @@
       {
         "key": "lineNumber",
         "name": "line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
@@ -1980,10 +1970,9 @@
       {
         "key": "lineNumber",
         "name": "line",
-        "kind": "integer",
+        "kind": "integer", "max": 2147483647,
         "positional": true,
-        "required": true,
-        "wire": "string"
+        "required": true
       },
       {"key":"projectName", "name":"project", "kind":"string", "help":"Optional project name"}
     ]
@@ -2239,11 +2228,10 @@
       {
         "key": "maxDepth",
         "name": "max-depth",
-        "kind": "integer",
-        "wire": "string"
+        "kind": "integer", "max": 2147483647
       },
       {"key":"packageFilter", "name":"package-filter", "kind":"string", "help":"Only include matching packages"},
-      {"key":"skipFramework", "name":"skip-framework", "kind":"boolean", "wire":"string", "help":"Skip framework frames (plugin default: true)"}
+      {"key":"skipFramework", "name":"skip-framework", "kind":"boolean", "help":"Skip framework frames (plugin default: true)"}
     ]
   },
   {
@@ -2255,8 +2243,7 @@
       {
         "key": "stackFrameIndex",
         "name": "frame",
-        "kind": "integer",
-        "wire": "string"
+        "kind": "integer", "max": 2147483647
       }
     ]
   },
@@ -2276,8 +2263,7 @@
       {
         "key": "stackFrameIndex",
         "name": "frame",
-        "kind": "integer",
-        "wire": "string"
+        "kind": "integer", "max": 2147483647
       }
     ]
   },

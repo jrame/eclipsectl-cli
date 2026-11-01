@@ -46,14 +46,7 @@ fn preview_is_optional_and_remains_a_native_boolean_for_all_eight_refactorings()
             assert_eq!(op.server, "eclipse-refactor");
             let wire = op.wire_arguments(&request.arguments).unwrap();
             assert_eq!(wire["preview"], enabled == "true");
-            assert_eq!(
-                wire["offset"],
-                if *name == "rename-variable" {
-                    json!(0)
-                } else {
-                    json!("0")
-                }
-            );
+            assert_eq!(wire["offset"], 0);
         }
         for suffix in [vec!["--preview"], vec!["--preview", "yes"]] {
             let mut invalid = args.clone();
@@ -99,7 +92,7 @@ fn report_offsets_and_ids_follow_the_plugin_schema() {
                 .unwrap()
                 .wire_arguments(&request.arguments)
                 .unwrap()["offset"],
-            offset
+            offset.parse::<u64>().unwrap()
         );
     }
     for offset in ["-1", "2147483648", "1.5", "x"] {

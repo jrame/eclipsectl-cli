@@ -22,14 +22,14 @@ fn call(argv: &[&str]) -> operations::Call {
 fn inventory_and_help_are_complete_and_unambiguous() {
     cli::command().debug_assert();
     let inventory = operations::inventory();
-    assert_eq!(inventory.len(), 100);
+    assert_eq!(inventory.len(), 101);
     assert_eq!(
         inventory
             .iter()
             .map(|op| &op.tool)
             .collect::<HashSet<_>>()
             .len(),
-        97
+        98
     );
     assert_eq!(
         inventory
@@ -37,7 +37,7 @@ fn inventory_and_help_are_complete_and_unambiguous() {
             .map(|op| &op.command)
             .collect::<HashSet<_>>()
             .len(),
-        100
+        101
     );
     assert!(inventory.iter().all(|op| !op.server.is_empty()));
     assert!(include_str!("../docs/COMMANDS.md").contains("eclipsectl launch create-java"));
@@ -321,7 +321,7 @@ fn wire_types_match_plugin_schemas_without_losing_typed_cli_values() {
         .unwrap()
         .wire_arguments(&breakpoint.arguments)
         .unwrap();
-    assert_eq!(wire["lineNumber"], "12");
+    assert_eq!(wire["lineNumber"], 12);
     let maven = call(&["eclipsectl", "build", "maven", "example", "clean", "test"]);
     let wire = operations::find(&maven.operation)
         .unwrap()

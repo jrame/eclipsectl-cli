@@ -3,9 +3,9 @@ use serde_json::{Value, json};
 use std::path::Path;
 
 #[test]
-fn all_97_catalogue_tools_have_cli_bindings() {
+fn all_98_catalogue_tools_have_cli_bindings() {
     let tools: std::collections::HashSet<_> = include_str!("catalog_tools.txt").lines().collect();
-    assert_eq!(tools.len(), 97);
+    assert_eq!(tools.len(), 98);
     let actual: std::collections::HashSet<_> = operations::inventory()
         .iter()
         .map(|op| format!("{}/{}", op.server, op.tool))
@@ -51,7 +51,7 @@ fn additional_tools_have_distinct_bindings_and_preserve_source() {
             "--skip-unknown-location",
             "false"
         ]),
-        json!({"severity":"warning", "maxResults":"25", "skipUnknownLocation":"false"})
+        json!({"severity":"warning", "maxResults":"25", "skipUnknownLocation":false})
     );
     assert_eq!(wire(&["problems", "panel"]), json!({}));
     // Existing compilation-problem command keeps its binding and defaults.
@@ -61,8 +61,33 @@ fn additional_tools_have_distinct_bindings_and_preserve_source() {
     );
     assert_eq!(
         wire(&["problems", "list"]),
-        json!({"severity":"ERROR", "maxResults":"10"})
+        json!({"severity":"ERROR", "maxResults":10})
     );
+}
+
+#[test]
+fn compilation_problems_use_integer_limits_and_case_insensitive_severity() {
+    for command in [vec!["problems", "list"], vec!["build", "errors"]] {
+        for (severity, expected) in [("error", "ERROR"), ("Warning", "WARNING"), ("aLl", "ALL")] {
+            let mut args = command.clone();
+            args.extend(["--max", "10", "--severity", severity, "--project", "app"]);
+            assert_eq!(
+                wire(&args),
+                json!({"severity":expected, "maxResults":10, "projectName":"app"})
+            );
+        }
+        for limit in ["0", "2147483647"] {
+            let mut args = command.clone();
+            args.extend(["--max", limit]);
+            assert_eq!(wire(&args)["maxResults"], limit.parse::<u64>().unwrap());
+        }
+        for invalid in [vec!["--max", "2147483648"], vec!["--severity", "fatal"]] {
+            let mut args = vec!["eclipsectl"];
+            args.extend(command.iter().copied());
+            args.extend(invalid);
+            assert!(cli::command().try_get_matches_from(args).is_err());
+        }
+    }
 }
 
 #[test]
@@ -70,7 +95,7 @@ fn breakpoint_project_and_hit_count_are_optional_and_wire_encoded() {
     for action in ["add", "remove", "enable", "disable"] {
         assert_eq!(
             wire(&["debug", "breakpoint", action, "src/Main.java", "12"]),
-            json!({"filePath":"src/Main.java", "lineNumber":"12"})
+            json!({"filePath":"src/Main.java", "lineNumber":12})
         );
         assert_eq!(
             wire(&[
@@ -82,7 +107,7 @@ fn breakpoint_project_and_hit_count_are_optional_and_wire_encoded() {
                 "--project",
                 "app"
             ]),
-            json!({"filePath":"src/Main.java", "lineNumber":"12", "projectName":"app"})
+            json!({"filePath":"src/Main.java", "lineNumber":12, "projectName":"app"})
         );
     }
     assert_eq!(
@@ -97,7 +122,7 @@ fn breakpoint_project_and_hit_count_are_optional_and_wire_encoded() {
             "--condition",
             "count > 1"
         ]),
-        json!({"filePath":"src/Main.java", "lineNumber":"12", "hitCount":"3", "condition":"count > 1"})
+        json!({"filePath":"src/Main.java", "lineNumber":12, "hitCount":3, "condition":"count > 1"})
     );
 }
 
@@ -124,7 +149,7 @@ fn inspection_parameters_preserve_false_and_plugin_defaults() {
             "--max-depth",
             "20"
         ]),
-        json!({"maxDepth":"20", "packageFilter":"com.example", "skipFramework":"false"})
+        json!({"maxDepth":20, "packageFilter":"com.example", "skipFramework":false})
     );
     assert_eq!(wire(&["console", "output"]), json!({}));
     assert_eq!(
@@ -138,11 +163,11 @@ fn inspection_parameters_preserve_false_and_plugin_defaults() {
             "--include-all-consoles",
             "true"
         ]),
-        json!({"consoleName":"Maven Console", "maxLines":"250", "includeAllConsoles":"true"})
+        json!({"consoleName":"Maven Console", "maxLines":"250", "includeAllConsoles":true})
     );
     assert_eq!(
         wire(&["console", "output", "--include-all-consoles", "false"]),
-        json!({"includeAllConsoles":"false"})
+        json!({"includeAllConsoles":false})
     );
     assert_eq!(
         wire(&[
@@ -155,7 +180,7 @@ fn inspection_parameters_preserve_false_and_plugin_defaults() {
             "--max-depth",
             "5"
         ]),
-        json!({"fullyQualifiedClassName":"com.example.Main", "methodName":"main", "methodSignature":"[QString;", "maxDepth":"5"})
+        json!({"fullyQualifiedClassName":"com.example.Main", "methodName":"main", "methodSignature":"[QString;", "maxDepth":5})
     );
 }
 
@@ -214,7 +239,7 @@ fn project_import_tests_and_maven_keep_existing_operands() {
     assert_eq!(wire(&["build", "errors"]), json!({}));
     assert_eq!(
         wire(&["build", "errors", "--severity", "WARNING", "--max", "30"]),
-        json!({"severity":"WARNING", "maxResults":"30"})
+        json!({"severity":"WARNING", "maxResults":30})
     );
 }
 

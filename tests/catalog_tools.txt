@@ -29,6 +29,7 @@ eclipse-debug/terminate
 eclipse-debug/updateLaunchEnvironment
 eclipse-ide/buildProjects
 eclipse-ide/createDirectories
+eclipse-ide/createJavaProject
 eclipse-ide/fileSearch
 eclipse-ide/fileSearchRegExp
 eclipse-ide/findFiles

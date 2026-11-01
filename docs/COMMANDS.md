@@ -2,6 +2,10 @@
 
 Generated help and this inventory use the same registry in `src/operations.json`. All commands accept `--json`, `--verbose`, `--quiet` and connection overrides. Repeat options marked `...`; boolean options take `true` or `false` unless marked as flags.
 
+`problems list` and `build errors` accept case-insensitive severities (`error`, `warning`, `all`, or uppercase). Their `--max` values are sent as JSON integers (0..2147483647); zero uses the plugin default of 50. `problems list` defaults to `--severity ERROR --max 10`, while `build errors` leaves defaults to the plugin (ALL, 50).
+
+MCP argument types follow the plugin's Java signatures: Java `int`/`Integer` and `Boolean` parameters receive native JSON integers and booleans, including breakpoint lines, refactoring positions, debug frames and code-generation options. Options backed by Java strings (for example Maven/test timeouts, console `--max-lines` and `problems panel --max`) retain their string encoding. The command-line syntax is unchanged.
+
 | Command and arguments | MCP server | MCP tool |
 |---|---|---|
 | `eclipsectl debug processes` | `eclipse-debug` | `listProcesses` |
@@ -13,6 +17,7 @@ Generated help and this inventory use the same registry in `src/operations.json`
 | `eclipsectl project layout <project>` | `eclipse-ide` | `getProjectLayout` |
 | `eclipsectl project properties <project>` | `eclipse-ide` | `getProjectProperties` |
 | `eclipsectl project read <project> <path>` | `eclipse-ide` | `readProjectResource` |
+| `eclipsectl project create <path> --java [--project <name>] [--java-version <version>] [--junit 5]` | `eclipse-ide` | `createJavaProject` |
 | `eclipsectl project import <path> [--project <project>]` | `eclipse-ide` | `importProject` |
 | `eclipsectl project mkdir <project> <path>` | `eclipse-ide` | `createDirectories` |
 | `eclipsectl code javadoc <fqn>` | `eclipse-ide` | `getJavaDoc` |

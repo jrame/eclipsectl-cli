@@ -80,15 +80,8 @@ async fn plugin_schemas_cover_every_registered_operation() {
                             _ => "string",
                         }
                     };
-                    // Older plugins advertise a string for this Java Boolean parameter.
-                    // Reflection accepts only JSON booleans; the read-only launch test
-                    // below checks the actual invocation instead of trusting this schema.
-                    let legacy_wait_schema = arg.key == "waitForCompletion"
-                        && matches!(op.tool.as_str(), "run" | "runDebug" | "runCoverage")
-                        && expected == "boolean";
                     if let Some(actual) = property.get("type").and_then(|v| v.as_str())
                         && actual != expected
-                        && !(legacy_wait_schema && actual == "string")
                     {
                         problems.push(format!(
                             "{} / {}: registry type {expected}, plugin type {actual}, schema {:?}",
@@ -144,6 +137,43 @@ async fn live_read_only_smoke() {
         )
         .await;
     assert!(response.ok, "{response:?}");
+    pool.close().await;
+}
+
+#[tokio::test]
+#[ignore = "requires a running Eclipse plugin and credentials"]
+async fn read_only_commands_accept_native_scalar_arguments() {
+    let cwd = std::env::current_dir().unwrap();
+    let config = config::load(&Settings::default(), &cwd).unwrap();
+    let pool = Pool::default();
+    for args in [
+        vec!["problems", "list", "--max", "10", "--severity", "error"],
+        vec!["build", "errors", "--max", "10", "--severity", "error"],
+        vec![
+            "problems",
+            "panel",
+            "--max",
+            "1",
+            "--skip-unknown-location",
+            "false",
+        ],
+        vec![
+            "console",
+            "output",
+            "--max-lines",
+            "1",
+            "--include-all-consoles",
+            "false",
+        ],
+    ] {
+        let matches = eclipsectl::cli::command()
+            .try_get_matches_from(["eclipsectl"].into_iter().chain(args))
+            .unwrap();
+        let (name, args) = eclipsectl::cli::selected(&matches);
+        let call = operations::find(&name).unwrap().call(args, &cwd).unwrap();
+        let response = pool.call(&config, &call).await;
+        assert!(response.ok, "{name}: {response:?}");
+    }
     pool.close().await;
 }
 

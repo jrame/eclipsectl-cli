@@ -155,6 +155,35 @@ fn search(text: &str) -> Call {
 }
 
 #[tokio::test]
+async fn compilation_problems_send_integer_limits_to_the_plugin() {
+    let mock = Mock::start().await;
+    let pool = Pool::default();
+    for command in [["problems", "list"], ["build", "errors"]] {
+        let matches = eclipsectl::cli::command()
+            .try_get_matches_from(["eclipsectl"].into_iter().chain(command).chain([
+                "--max",
+                "10",
+                "--severity",
+                "error",
+            ]))
+            .unwrap();
+        let (name, args) = eclipsectl::cli::selected(&matches);
+        let call = eclipsectl::operations::find(&name)
+            .unwrap()
+            .call(args, std::path::Path::new(r"B:\work"))
+            .unwrap();
+        let response = pool.call(&mock.config, &call).await;
+        assert!(response.ok, "{response:?}");
+        let calls = mock.state.calls.lock().await;
+        let (server, tool, arguments) = calls.last().unwrap();
+        assert_eq!(server, "eclipse-ide");
+        assert_eq!(tool, "getCompilationErrors");
+        assert_eq!(arguments, &json!({"severity":"ERROR", "maxResults":10}));
+    }
+    pool.close().await;
+}
+
+#[tokio::test]
 async fn java_refactorings_route_typed_arguments_through_the_mcp_session() {
     let mock = Mock::start().await;
     let pool = Pool::default();
@@ -187,13 +216,13 @@ async fn java_refactorings_route_typed_arguments_through_the_mcp_session() {
             "extract-variable",
             "refactorExtractVariable",
             json!({"length":5,"variableName":"subtotal","replaceAll":false,"declareFinal":true}),
-            json!({"length":"5","variableName":"subtotal","replaceAll":false,"declareFinal":true}),
+            json!({"length":5,"variableName":"subtotal","replaceAll":false,"declareFinal":true}),
         ),
         (
             "extract-constant",
             "refactorExtractConstant",
             json!({"length":2,"constantName":"LIMIT","visibility":"private"}),
-            json!({"length":"2","constantName":"LIMIT","visibility":"private"}),
+            json!({"length":2,"constantName":"LIMIT","visibility":"private"}),
         ),
         (
             "inline-method",
@@ -227,14 +256,11 @@ async fn java_refactorings_route_typed_arguments_through_the_mcp_session() {
         assert!(response.ok, "{command}: {response:?}");
         let mut expected = wire.as_object().unwrap().clone();
         expected.extend(
-            json!({"filePath":"src/é Example.java","projectName":"disposable","offset":"120"})
+            json!({"filePath":"src/é Example.java","projectName":"disposable","offset":120})
                 .as_object()
                 .unwrap()
                 .clone(),
         );
-        if command == "rename-variable" {
-            expected.insert("offset".into(), json!(120));
-        }
         let calls = mock.state.calls.lock().await;
         let (server, actual_tool, actual_arguments) = calls.last().unwrap();
         assert_eq!(server, "eclipse-refactor");

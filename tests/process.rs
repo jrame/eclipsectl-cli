@@ -498,6 +498,67 @@ async fn run_wait_sends_a_boolean_and_waits_for_the_plugin_response() {
 }
 
 #[tokio::test]
+async fn run_and_debug_preserve_test_summaries_in_text_and_json_output() {
+    use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
+    use serde_json::json;
+
+    let app = Router::new().route("/mcp/{server}", post(|Json(request): Json<Value>| async move {
+        let result = match request["method"].as_str().unwrap_or("") {
+            "initialize" => json!({"protocolVersion":"2025-03-26", "capabilities":{"tools":{}}, "serverInfo":{"name":"test-summary-mock","version":"1"}}),
+            "notifications/initialized" => return StatusCode::ACCEPTED.into_response(),
+            "tools/call" => {
+                let args = &request["params"]["arguments"];
+                assert_eq!(args["waitForCompletion"], true);
+                let framework = args["configuration"].as_str()
+                    .or_else(|| args["configName"].as_str()).unwrap();
+                json!({"content":[{"type":"text","text":format!(
+                    "Launch '{framework}' completed.\nTests ({framework}): run: 12, failed: 1, skipped: 2"
+                )}]})
+            }
+            _ => json!({}),
+        };
+        Json(json!({"jsonrpc":"2.0","id":request["id"],"result":result})).into_response()
+    }));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    let sandbox = Sandbox::new();
+    for framework in ["JUnit", "TestNG"] {
+        let expected = format!(
+            "Launch '{framework}' completed.\nTests ({framework}): run: 12, failed: 1, skipped: 2"
+        );
+        for args in [
+            vec!["run", "--configuration", framework, "--wait"],
+            vec!["debug", "run", framework, "--wait"],
+        ] {
+            for json_output in [false, true] {
+                let mut command = sandbox.command();
+                command.args(&args).args(["--eclipse-url", &url]);
+                if json_output {
+                    command.arg("--json");
+                }
+                let output = command.output().await.unwrap();
+                assert!(
+                    output.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                if json_output {
+                    let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+                    assert_eq!(response["result"]["content"][0]["text"], expected);
+                } else {
+                    assert_eq!(
+                        String::from_utf8(output.stdout).unwrap().trim_end(),
+                        expected
+                    );
+                }
+            }
+        }
+    }
+    server.abort();
+}
+
+#[tokio::test]
 async fn local_nested_config_is_reloaded_without_restarting_daemon() {
     use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
     use serde_json::json;

@@ -41,13 +41,13 @@ fn refactorings_preserve_positions_paths_and_plugin_wire_types() {
             "extract-variable",
             "refactorExtractVariable",
             vec!["5", "subtotal", "--replace-all", "false", "--final", "true"],
-            json!({"length":"5","variableName":"subtotal","replaceAll":false,"declareFinal":true}),
+            json!({"length":5,"variableName":"subtotal","replaceAll":false,"declareFinal":true}),
         ),
         (
             "extract-constant",
             "refactorExtractConstant",
             vec!["2", "LIMIT", "--visibility", "package"],
-            json!({"length":"2","constantName":"LIMIT","visibility":"package"}),
+            json!({"length":2,"constantName":"LIMIT","visibility":"package"}),
         ),
         (
             "inline-method",
@@ -71,14 +71,11 @@ fn refactorings_preserve_positions_paths_and_plugin_wire_types() {
         assert_eq!(operation.server, "eclipse-refactor");
         assert_eq!(operation.tool, tool);
         let mut expected =
-            json!({"filePath":r"B:\dev\é space\Example.java","offset":"0","projectName":"example"});
+            json!({"filePath":r"B:\dev\é space\Example.java","offset":0,"projectName":"example"});
         expected
             .as_object_mut()
             .unwrap()
             .extend(extra.as_object().unwrap().clone());
-        if command == "rename-variable" {
-            expected["offset"] = json!(0);
-        }
         assert_eq!(
             Value::Object(operation.wire_arguments(&call.arguments).unwrap()),
             expected

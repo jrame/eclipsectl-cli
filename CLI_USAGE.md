@@ -26,6 +26,49 @@ eclipsectl debug stacktrace --max-depth 20
 
 `debug thread-select` takes a **thread name**, matching the plugin. Stack inspection uses `--max-depth`, replacing the old ignored thread identifier.
 
+## Run and debug test configurations
+
+```sh
+eclipsectl run --configuration FooTest --wait
+eclipsectl debug run FooTest --wait
+```
+
+With the updated companion plugin, JUnit and TestNG launch responses include
+`Tests (JUnit): run: 12, failed: 1, skipped: 2` (or `TestNG`). JUnit failures include
+errors, and skips include ignored tests and failed assumptions. TestNG counts
+come directly from the matching native Eclipse test run, independently of console
+output. Use `--wait` for final counts. Without it, results may be partial or
+pending; unavailable counters are reported explicitly rather than as zero.
+`--json` preserves the complete plugin response, including this summary.
+
+## Create a Java project
+
+```powershell
+eclipsectl project create B:\dev\example --java --project Example --java-version 21 --junit 5
+```
+
+`--java` is required. The updated companion plugin creates, registers and opens
+an Eclipse JDT project with the Java nature/builder, explicit UTF-8 encoding and
+`src` compiled into `bin`. Omit `--project` to use the directory name. Omit
+`--java-version` to use Eclipse's configured default JRE and its Java version;
+otherwise supply a Java feature version (8 or newer) supported by the installed
+Eclipse compiler and backed by a compatible installed JRE/execution environment.
+The JRE and its libraries are checked before creation. No JDK is downloaded.
+
+JUnit is absent by default. `--junit 5` adds Eclipse's JUnit 5 classpath container
+and a test source folder `test` compiled into a separate `bin-test` directory.
+This uses Eclipse's bundled JUnit libraries; it does not create Maven/Gradle files,
+Java sources, tests, module descriptors or launch configurations.
+
+The target must not exist, even as an empty directory, and its parent directory
+must already exist. Invalid/duplicate workspace names, locations overlapping an
+existing workspace project, unsupported paths and unavailable JREs fail without
+overwriting anything. Windows and Windows-drive paths mounted in WSL use the
+same conversion rules as `project import`; WSL Linux filesystem paths are unsupported.
+There is no force option. Errors after creation begins report the partial path
+and registration state, retaining files for inspection instead of deleting them.
+`--json` preserves MCP errors in `error.details` (exit 1); invalid CLI arguments
+return exit 2. `project import` keeps its existing behavior for existing projects.
 ## Build Eclipse projects
 
 ```sh

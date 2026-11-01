@@ -55,7 +55,9 @@ fn add_args(mut cmd: Command, op: &Operation) -> Command {
                 Ok::<_, &'static str>(s)
             }));
         } else if !spec.choices.is_empty() {
-            arg = arg.value_parser(PossibleValuesParser::new(spec.choices.clone()));
+            arg = arg
+                .value_parser(PossibleValuesParser::new(spec.choices.clone()))
+                .ignore_case(spec.ignore_case);
         }
         if let Some(default) = &spec.default {
             arg = arg.default_value(default.clone());

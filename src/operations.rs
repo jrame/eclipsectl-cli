@@ -41,6 +41,8 @@ pub struct Argument {
     #[serde(default)]
     pub choices: Vec<String>,
     #[serde(default)]
+    pub ignore_case: bool,
+    #[serde(default)]
     pub help: String,
     #[serde(default)]
     pub local: bool,
@@ -147,7 +149,15 @@ impl Operation {
                         }
                         Value::Object(map)
                     }
-                    _ => Value::from(values[0].clone()),
+                    _ => Value::from(
+                        arg.choices
+                            .iter()
+                            .find(|choice| {
+                                arg.ignore_case && choice.eq_ignore_ascii_case(&values[0])
+                            })
+                            .unwrap_or(&values[0])
+                            .clone(),
+                    ),
                 })
             };
             if arg.stdin && value.is_none() {

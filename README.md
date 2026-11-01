@@ -111,3 +111,16 @@ cargo build --locked --release
 The library separates CLI, registry, paths, configuration, IPC, MCP sessions and daemon. `src/operations.json` is the shared command contract; keep it synchronized with `docs/COMMANDS.md`. Commit `Cargo.lock`.
 
 CI checks Windows/Linux. Tags named `v*` build and publish native x64 archives with SHA-256 checksums. Real Eclipse validation requires a configured plugin and is separate from mock-based CI.
+
+## Create Java projects
+
+With a companion plugin exposing `createJavaProject`:
+
+```powershell
+eclipsectl project create B:\dev\example --java --java-version 21 --junit 5
+```
+
+Creates and opens a JDT project with UTF-8, `src`/`bin`, and optional JUnit 5
+`test`/`bin-test`. The target must be new and its parent must exist. Omitting
+`--java-version` uses Eclipse's default installed JRE; no JDK is downloaded.
+See [creation options and conflict behavior](CLI_USAGE.md#create-a-java-project).

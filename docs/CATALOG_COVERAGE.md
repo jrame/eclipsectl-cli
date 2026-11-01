@@ -1,8 +1,9 @@
 # Companion plugin catalogue coverage
 
-The CLI binds all 97 tools in the generated `docs/mcp-tools/*.md` catalogue of
+The CLI binds all 98 tools in the generated `docs/mcp-tools/*.md` catalogue of
 `eclipsectl-mcp-plugin`, checked against commit
-`e6078807b69b7eae7a6f953022263506e5dd8133`. The tool identity snapshot in
+`e6078807b69b7eae7a6f953022263506e5dd8133` plus the new `createJavaProject` tool.
+The tool identity snapshot in
 `tests/catalog_tools.txt` keeps the contract test independent of a neighbouring
 plugin checkout. Update it when intentionally adopting a newer catalogue.
 See [COMMANDS.md](COMMANDS.md) for every command binding.
@@ -62,3 +63,11 @@ Set `--operation-timeout` explicitly if a longer client wait is needed.
 Validation uses command parsing, exact request argument contracts, catalogue
 identity coverage and local simulated transport tests. It does not run builds,
 tests, imports, formatting or breakpoint mutations in the user's Eclipse.
+
+## Java project creation
+
+`project create <path> --java` binds `eclipse-ide/createJavaProject`.
+`--java` selects the project kind locally and is not sent to the plugin.
+Optional `--java-version` sends an integer; `--junit 5` sends a version string.
+Defaults and conflict handling are documented in [CLI_USAGE.md](../CLI_USAGE.md#create-a-java-project).
+The Java declaration snapshot in `tests/plugin-tool-contract.json` checks all 98 tools.
